@@ -1,0 +1,10 @@
+ANALYZE t_range_pk_1M;
+ANALYZE t_hash_pk_1M;
+ANALYZE t_range_pk_500K;
+ANALYZE t_hash_pk_500K;
+ANALYZE t_range_pk_200K;
+ANALYZE t_hash_pk_200K;
+ANALYZE t_range_pk_100K;
+ANALYZE t_hash_pk_100K;
+ANALYZE t_range_pk_1K;
+ANALYZE t_hash_pk_1K;

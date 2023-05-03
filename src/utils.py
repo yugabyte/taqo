@@ -181,6 +181,7 @@ def get_alias_table_names(sql_str, tables_in_sut):
             if table_name_in_query == real_table.name \
                     or ('.' in table_name_in_query
                         and table_name_in_query.split(".")[1] == real_table.name):
+                real_table.name = real_table.name.lower()
                 real_table.alias = alias
                 table_objects_in_query.append(real_table)
 

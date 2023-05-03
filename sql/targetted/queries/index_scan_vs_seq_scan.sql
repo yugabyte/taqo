@@ -1,0 +1,23 @@
+SELECT * FROM t_range_pk_1M WHERE id > 0;
+SELECT * FROM t_range_pk_1M WHERE id > 10000;
+SELECT * FROM t_range_pk_1M WHERE id > 20000;
+SELECT * FROM t_range_pk_1M WHERE id > 30000;
+SELECT * FROM t_range_pk_1M WHERE id > 40000;
+SELECT * FROM t_range_pk_1M WHERE id > 50000;
+SELECT * FROM t_range_pk_1M WHERE id > 60000;
+SELECT * FROM t_range_pk_1M WHERE id > 70000;
+SELECT * FROM t_range_pk_1M WHERE id > 80000;
+SELECT * FROM t_range_pk_1M WHERE id > 90000;
+SELECT * FROM t_range_pk_1M WHERE id > 100000;
+
+SELECT * FROM t_hash_pk_1M WHERE id > 0;
+SELECT * FROM t_hash_pk_1M WHERE id > 10000;
+SELECT * FROM t_hash_pk_1M WHERE id > 20000;
+SELECT * FROM t_hash_pk_1M WHERE id > 30000;
+SELECT * FROM t_hash_pk_1M WHERE id > 40000;
+SELECT * FROM t_hash_pk_1M WHERE id > 50000;
+SELECT * FROM t_hash_pk_1M WHERE id > 60000;
+SELECT * FROM t_hash_pk_1M WHERE id > 70000;
+SELECT * FROM t_hash_pk_1M WHERE id > 80000;
+SELECT * FROM t_hash_pk_1M WHERE id > 90000;
+SELECT * FROM t_hash_pk_1M WHERE id > 100000;
