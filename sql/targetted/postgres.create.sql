@@ -4,6 +4,7 @@ CREATE TABLE t_range_pk_1m as SELECT
     s v2
     FROM generate_series(1, 100000) s;
 ALTER TABLE t_range_pk_1m ADD PRIMARY KEY (id);
+CREATE INDEX tr1mv1 ON t_range_pk_1m (v1 ASC);
 
 CREATE VIEW t_hash_pk_1m AS SELECT * FROM t_range_pk_1m;
 
