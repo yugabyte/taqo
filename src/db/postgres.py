@@ -351,6 +351,15 @@ class PostgresExecutionPlan(ExecutionPlan):
                 return float(match.groups()[0])
         except Exception as e:
             return 0
+        
+    def get_estimated_rows(self):
+        try:
+            matches = re.finditer(r"\s\(cost=\d+\.\d+\.\.\d+\.\d+\srows=(\d+)", self.full_str,
+                                  re.MULTILINE)
+            for matchNum, match in enumerate(matches, start=1):
+                return float(match.groups()[0])
+        except Exception as e:
+            return 0
 
     def get_rpc_calls(self, execution_plan: 'ExecutionPlan' = None):
         try:
