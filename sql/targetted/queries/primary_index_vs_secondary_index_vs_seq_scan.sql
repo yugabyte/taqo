@@ -22,6 +22,30 @@ SELECT * FROM t_hash_pk_1m WHERE id > 80000;
 SELECT * FROM t_hash_pk_1m WHERE id > 90000;
 SELECT * FROM t_hash_pk_1m WHERE id > 100000;
 
+SELECT id FROM t_range_pk_1m WHERE id > 0;
+SELECT id FROM t_range_pk_1m WHERE id > 10000;
+SELECT id FROM t_range_pk_1m WHERE id > 20000;
+SELECT id FROM t_range_pk_1m WHERE id > 30000;
+SELECT id FROM t_range_pk_1m WHERE id > 40000;
+SELECT id FROM t_range_pk_1m WHERE id > 50000;
+SELECT id FROM t_range_pk_1m WHERE id > 60000;
+SELECT id FROM t_range_pk_1m WHERE id > 70000;
+SELECT id FROM t_range_pk_1m WHERE id > 80000;
+SELECT id FROM t_range_pk_1m WHERE id > 90000;
+SELECT id FROM t_range_pk_1m WHERE id > 100000;
+
+SELECT id FROM t_hash_pk_1m WHERE id > 0;
+SELECT id FROM t_hash_pk_1m WHERE id > 10000;
+SELECT id FROM t_hash_pk_1m WHERE id > 20000;
+SELECT id FROM t_hash_pk_1m WHERE id > 30000;
+SELECT id FROM t_hash_pk_1m WHERE id > 40000;
+SELECT id FROM t_hash_pk_1m WHERE id > 50000;
+SELECT id FROM t_hash_pk_1m WHERE id > 60000;
+SELECT id FROM t_hash_pk_1m WHERE id > 70000;
+SELECT id FROM t_hash_pk_1m WHERE id > 80000;
+SELECT id FROM t_hash_pk_1m WHERE id > 90000;
+SELECT id FROM t_hash_pk_1m WHERE id > 100000;
+
 SELECT * FROM t_range_pk_1m WHERE v1 > 0;
 SELECT * FROM t_range_pk_1m WHERE v1 > 10000;
 SELECT * FROM t_range_pk_1m WHERE v1 > 20000;
@@ -45,3 +69,27 @@ SELECT * FROM t_hash_pk_1m WHERE v1 > 70000;
 SELECT * FROM t_hash_pk_1m WHERE v1 > 80000;
 SELECT * FROM t_hash_pk_1m WHERE v1 > 90000;
 SELECT * FROM t_hash_pk_1m WHERE v1 > 100000;
+
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 0;
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 10000;
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 20000;
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 30000;
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 40000;
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 50000;
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 60000;
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 70000;
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 80000;
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 90000;
+SELECT v1 FROM t_range_pk_1m WHERE v1 > 100000;
+
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 0;
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 10000;
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 20000;
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 30000;
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 40000;
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 50000;
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 60000;
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 70000;
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 80000;
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 90000;
+SELECT v1 FROM t_hash_pk_1m WHERE v1 > 100000;
