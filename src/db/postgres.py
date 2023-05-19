@@ -10,7 +10,7 @@ from allpairspy import AllPairs
 
 from config import Config, ConnectionConfig, DDLStep
 from objects import Query, EPNode, ExecutionPlan, ListOfOptimizations, Table, Optimization, \
-    ListOfQueries, ResultsLoader
+    CollectResult, ResultsLoader
 from db.database import Database
 from utils import evaluate_sql, allowed_diff
 
@@ -73,7 +73,7 @@ class Postgres(Database):
         return PostgresResultsLoader()
 
     def get_list_queries(self):
-        return PostgresListOfQueries()
+        return PostgresCollectResult()
 
 
 class Connection:
@@ -456,7 +456,7 @@ class PGListOfOptimizations(ListOfOptimizations):
             )
 
 
-class PostgresListOfQueries(ListOfQueries):
+class PostgresCollectResult(CollectResult):
     queries: List[PostgresQuery] = None
 
 
@@ -464,4 +464,4 @@ class PostgresResultsLoader(ResultsLoader):
 
     def __init__(self):
         super().__init__()
-        self.clazz = PostgresListOfQueries
+        self.clazz = PostgresCollectResult
