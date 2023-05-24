@@ -191,7 +191,7 @@ class Leading:
 
         for tables, scans in AllPairs([self.alias_to_table, scan_product]):
             scan_hints = " ".join(
-                f"{scan.value}({tables[table_idx].alias})" for table_idx, scan in
+                f"{scan.value}({tables.alias})" for table_idx, scan in
                 enumerate(scans))
 
             self.joins.append(f"{scan_hints}")
