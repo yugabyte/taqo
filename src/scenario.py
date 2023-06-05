@@ -115,7 +115,9 @@ class Scenario:
                         original_query.execution_time_ms = \
                             original_query.execution_plan.get_estimated_cost()
                     else:
+                        query_str = original_query.get_explain_analyze() if self.config.server_side_execution else None
                         calculate_avg_execution_time(cur, original_query, self.sut_database,
+                                                     query_str=query_str,
                                                      num_retries=int(self.config.num_retries),
                                                      connection=conn)
 
@@ -143,7 +145,7 @@ class Scenario:
         progress_bar = tqdm(list_of_optimizations)
         num_skipped = 0
         min_execution_time = original_query.execution_time_ms if original_query.execution_time_ms > 0 else (
-                    self.config.test_query_timeout * 1000)
+                self.config.test_query_timeout * 1000)
         original_query.optimizations = []
         execution_plans_checked = set()
 
@@ -183,6 +185,7 @@ class Scenario:
             exec_plan_md5 = get_md5(optimization.execution_plan.get_clean_plan())
             not_unique_plan = exec_plan_md5 in execution_plans_checked
             execution_plans_checked.add(exec_plan_md5)
+            query_str = optimization.get_explain_analyze() if self.config.server_side_execution else None
 
             if self.config.plans_only:
                 original_query.execution_time_ms = \
@@ -191,6 +194,7 @@ class Scenario:
                     cur,
                     optimization,
                     self.sut_database,
+                    query_str=query_str,
                     num_retries=int(self.config.num_retries),
                     connection=connection):
                 num_skipped += 1
