@@ -82,27 +82,21 @@ def calculate_avg_execution_time(cur,
             start_time = current_milli_time()
             query.parameters = evaluate_sql(cur, query_str)
 
-            result = None
-            if iteration >= num_warmup:
+            if iteration == 0:
+                cardinality, result = get_result(cur, is_dml)
+                if with_analyze:
+                    query.result_cardinality = extract_actual_cardinality(result)
+                    query.result_hash = "NONE"
+                else:
+                    query.result_cardinality = cardinality
+                    query.result_hash = get_md5(result)
+            elif iteration >= num_warmup:
                 if with_analyze:
                     _, result = get_result(cur, is_dml)
-                    connection.rollback()
 
                     sum_execution_times += extract_execution_time_from_analyze(result)
-                    query.result_cardinality = extract_actual_cardinality(result)
                 else:
                     sum_execution_times += current_milli_time() - start_time
-
-            if iteration == 0:
-                if not result:
-                    cardinality, result = get_result(cur, is_dml)
-                    connection.rollback()
-                    if with_analyze:
-                        query.result_cardinality = extract_actual_cardinality(result)
-                        query.result_hash = "NONE"
-                    else:
-                        query.result_cardinality = cardinality
-                        query.result_hash = get_md5(result)
         except psycopg2.errors.QueryCanceled:
             # failed by timeout - it's ok just skip optimization
             query.execution_time_ms = -1
@@ -116,6 +110,8 @@ def calculate_avg_execution_time(cur,
             traceback.print_exc(limit=None, file=None, chain=True)
             return False
         finally:
+            connection.rollback()
+
             if iteration >= num_warmup:
                 actual_evaluations += 1
 
