@@ -133,12 +133,13 @@ def query_is_dml(query_str_lower):
 
 
 def extract_execution_time_from_analyze(result):
+    extracted = -1
     matches = re.finditer(r"Execution\sTime:\s(\d+\.\d+)\sms", result, re.MULTILINE)
     for matchNum, match in enumerate(matches, start=1):
-        result = float(match.groups()[0])
+        extracted = float(match.groups()[0])
         break
 
-    return result
+    return extracted
 
 
 def extract_actual_cardinality(result):
