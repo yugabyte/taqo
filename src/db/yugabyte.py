@@ -161,7 +161,7 @@ class YugabyteLocalCluster(Yugabyte):
             launch_cmds.append(f'--master_flags={self.config.master_flags}')
 
         out = subprocess.check_output(launch_cmds,
-                                      stderr=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT,
                                       cwd=self.path, )
 
         if 'For more info, please use: yb-ctl status' not in str(out):
@@ -241,7 +241,6 @@ class YugabyteLocalRepository(Yugabyte):
                          '--build-yugabyted-ui',
                          '--no-tests',
                          '--skip-java-build'],
-                        stdout=subprocess.DEVNULL,
                         stderr=subprocess.STDOUT,
                         cwd=self.path)
 
@@ -253,7 +252,7 @@ class YugabyteLocalRepository(Yugabyte):
             self.logger.info("Destroying existing Yugabyte var/ directory")
 
             out = subprocess.check_output(['python3', 'bin/yugabyted', 'destroy'],
-                                          stderr=subprocess.PIPE,
+                                          stderr=subprocess.STDOUT,
                                           cwd=self.path, )
 
             if 'error' in str(out.lower()):
@@ -263,12 +262,11 @@ class YugabyteLocalRepository(Yugabyte):
         self.logger.info("Starting Yugabyte node")
 
         subprocess.call(['python3', 'bin/yugabyted', 'start'],
-                        # stdout=subprocess.DEVNULL,
                         stderr=subprocess.STDOUT,
                         cwd=self.path)
 
         out = subprocess.check_output(['python3', 'bin/yugabyted', 'status'],
-                                      stderr=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT,
                                       cwd=self.path, )
 
         # temporarily disabled status check
@@ -284,7 +282,7 @@ class YugabyteLocalRepository(Yugabyte):
     def stop_database(self):
         self.logger.info("Stopping Yugabyte node if exists")
         out = subprocess.check_output(['python3', 'bin/yugabyted', 'stop'],
-                                      stderr=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT,
                                       cwd=self.path, )
 
         if 'error' in str(out.lower()):
