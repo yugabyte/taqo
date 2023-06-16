@@ -105,42 +105,31 @@ class CollectResult:
 
 
 class PlanNode:
-    level: int
-    name: str
-    properties: List[str]
-    children: List['PlanNode']
-
-    total_cost: float
-    plan_rows: float
-    plan_width: int
-    startup_ms: float
-    total_ms: float
-    rows: float
-    nloops: float
-
     def __init__(self):
-        self.level = 0
-        self.name = ""
-        self.properties = []
-        self.children = []
+        self.level: int = 0
+        self.node_type: str = None
+        self.name: str = None
+        self.properties: List[str] = []
+        self.child_nodes: List[PlanNode] = []
 
-        self.startup_cost = 0.0
-        self.total_cost = 0.0
-        self.plan_rows = 0.0
-        self.plan_width = 0
-        self.startup_ms = 0
-        self.total_ms = 0
-        self.rows = 0.0
-        self.nloops = 0.0
+        self.startup_cost: float = 0.0
+        self.total_cost: float = 0.0
+        self.plan_rows: float = 0.0
+        self.plan_width: int = 0
+
+        self.startup_ms: float = 0
+        self.total_ms: float = 0
+        self.rows: float = 0.0
+        self.nloops: float = 0.0
 
     def __cmp__(self, other):
         pass  # todo
 
     def __str__(self):
-        return self.get_full_str(estimate=False, actual=False, properties=False)
+        return f'{self.level}:{self.node_type}'
 
     def get_full_str(self, estimate=True, actual=True, properties=False):
-        s = f'{self.level}: {self.name}'
+        s = str(self)
         if estimate:
             s += f'  (cost={self.startup_cost}..{self.total_cost} rows={self.plan_rows} width={self.plan_width})'
         if actual:
@@ -149,17 +138,53 @@ class PlanNode:
             else:
                 s += f'  (actual time={self.startup_ms}..{self.total_ms} rows={self.rows} nloops={self.nloops})'
         if properties and len(self.properties) > 0:
-            s += self.properties.__str__()
+            s += str(self.properties)
         return s
 
-    def get_tree_str(self, estimate=True, actual=True, properties=False):
-        s = self.get_full_str(estimate, actual, properties, False)
-        for child in self.children:
-            s += '\n'
-            for _ in range(child.level):
-                s += '  '
-            s += child.get_tree_str(estimate, actual, properties)
+
+class ScanNode(PlanNode):
+    def __init__(self):
+        super().__init__()
+        self.table_name: str = None
+        self.table_alias: str = None
+        self.index_name: str = None
+
+    def __str__(self):
+        s = f'{self.level}:{self.node_type}: '
+        s += f'table={self.table_name} alias={self.table_alias} index={self.index_name}'
         return s
+
+
+class PlanNodeVisitor:
+    def visit(self, node):
+        method = f'visit_{node.__class__.__name__}'
+        visitor = getattr(self, method, self.generic_visit)
+        return visitor(node)
+
+    def generic_visit(self, node):
+        for child in node.child_nodes:
+            self.visit(child)
+
+
+class PlanPrinter(PlanNodeVisitor):
+    def __init__(self, estimate=True, actual=True):
+        super().__init__()
+        self.plan_tree_str: str = ""
+        self.estimate = estimate
+        self.actual = actual
+
+    def visit(self, node):
+        for _ in range(node.level):
+            self.plan_tree_str += '  '
+        self.plan_tree_str += node.get_full_str(self.estimate, self.actual)
+        self.plan_tree_str += '\n'
+        self.generic_visit(node)
+
+    @staticmethod
+    def build_plan_tree_str(node, estimate=True, actual=True):
+        printer = PlanPrinter(estimate, actual)
+        printer.visit(node)
+        return printer.plan_tree_str
 
 
 @dataclasses.dataclass

@@ -10,7 +10,7 @@ from allpairspy import AllPairs
 
 from config import Config, ConnectionConfig, DDLStep
 from objects import Query, ExecutionPlan, ListOfOptimizations, Table, Optimization, \
-    CollectResult, ResultsLoader, PlanNode
+    CollectResult, ResultsLoader, PlanNode, ScanNode
 from db.database import Database
 from utils import evaluate_sql, allowed_diff
 
@@ -46,10 +46,13 @@ re_plan_node_header = [
     '\s+',
     '\(cost=(\d+\.\d*)\.\.(\d+\.\d*)\s+rows=(\d+)\s+width=(\d+)\)',
     '\s+',
-    '\((?:(?:actual time=(\d+\.\d*)\.\.(\d+\.\d*) +rows=(\d+) +loops=(\d+))|(?:(never executed)))\)',
+    '\((?:(?:actual time=(\d+\.\d*)\.\.(\d+\.\d*) +rows=(\d+) +loops=(\d+))|(?:(?P<never>never executed)))\)',
 ]
 
 pat_plan_node_header = re.compile(''.join(re_plan_node_header))
+
+re_decompose_scan_node = '(?P<type>\S+(?:\s+\S+)* Scan)(?: using (?P<index>\S+))* on (?P<table>\S+)(?: (?P<alias>\S+))*'
+pat_decompose_scan_node = re.compile(re_decompose_scan_node)
 
 
 class Postgres(Database):
@@ -343,29 +346,53 @@ class PostgresOptimization(PostgresQuery, Optimization):
 
 @dataclasses.dataclass
 class PostgresExecutionPlan(ExecutionPlan):
-    def parse_plan(self):
+    def decompose_node_name(self, node_name):
+        node_type = index_name = table_name = table_alias = None
+        if match := pat_decompose_scan_node.search(node_name):
+            node_type = match.group('type')
+            index_name = match.group('index')
+            table_name = match.group('table')
+            table_alias = match.group('alias')
+        else:
+            node_type = node_name
+
+        return (node_type, table_name, table_alias, index_name)
+
+    def parse_plan(self, plan_str):
         prev_level = 0
         current_path = []
-        for node_str in self.full_str.split('->'):
-            node = PlanNode()
-            node.level = prev_level
+        for node_str in plan_str.split('->'):
+            node_level = prev_level
             # trailing spaces after the previous newline is the indent of the next node
             node_end = node_str.rfind('\n')
             indent = int(node_str.count(' ', node_end))
-            prev_level = indent // 2
-            # subtract the indentation from each plan node header added by postgres explain.c for "->  "
-            if prev_level > 1:
-                prev_level -= 2
+            # postgres explain.c adds 6 whitespaces at each indentation level with "  ->  "
+            # for each node header. add back 4 for "->  " before division because we split
+            # it at each '->'.
+            prev_level = int((indent + 4) / 6)
 
             node_props = node_str[:node_end].splitlines()
 
             if match := pat_plan_node_header.search(node_props[0]):
-                node.name = match.group(1)
+                node_name = match.group(1)
+                (node_type, table_name, table_alias, index_name) = self.decompose_node_name(node_name)
+
+                if table_name:
+                    node = ScanNode()
+                    node.table_name = table_name
+                    node.table_alias = table_alias
+                    node.index_name = index_name
+                else:
+                    node = PlanNode()
+                node.node_type = node_type
+
+                node.level = node_level
+                node.name = node_name
                 node.startup_cost = match.group(2)
                 node.total_cost = match.group(3)
                 node.plan_rows = match.group(4)
                 node.plan_width = match.group(5)
-                if match.group(10) == 'never executed':
+                if match.group('never'):
                     node.nloops = 0
                 else:
                     node.startup_ms = match.group(6)
@@ -384,7 +411,7 @@ class PostgresExecutionPlan(ExecutionPlan):
             else:
                 while len(current_path) > node.level:
                     current_path.pop()
-                current_path[-1].children.append(node)
+                current_path[-1].child_nodes.append(node)
 
         return current_path[0] if current_path else None
 
