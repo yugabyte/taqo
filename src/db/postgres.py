@@ -51,9 +51,8 @@ re_plan_node_header = [
 
 pat_plan_node_header = re.compile(''.join(re_plan_node_header))
 
-re_decompose_scan_node = '(?P<type>\S+(?:\s+\S+)* Scan)(?: using (?P<index>\S+))* on (?P<table>\S+)(?: (?P<alias>\S+))*'
+re_decompose_scan_node = '(?P<type>\S+(?:\s+\S+)* Scan(?P<backward>\s+Backward)*)(?: using (?P<index>\S+))* on (?P<table>\S+)(?: (?P<alias>\S+))*'
 pat_decompose_scan_node = re.compile(re_decompose_scan_node)
-
 
 class Postgres(Database):
 
@@ -347,21 +346,21 @@ class PostgresOptimization(PostgresQuery, Optimization):
 @dataclasses.dataclass
 class PostgresExecutionPlan(ExecutionPlan):
     def decompose_node_name(self, node_name):
-        node_type = index_name = table_name = table_alias = None
+        index_name = table_name = table_alias = is_backward = None
         if match := pat_decompose_scan_node.search(node_name):
             node_type = match.group('type')
             index_name = match.group('index')
+            is_backward = match.group('backward') != None
             table_name = match.group('table')
             table_alias = match.group('alias')
         else:
             node_type = node_name
+        return (node_type, table_name, table_alias, index_name, is_backward)
 
-        return (node_type, table_name, table_alias, index_name)
-
-    def parse_plan(self, plan_str):
+    def parse_plan(self):
         prev_level = 0
         current_path = []
-        for node_str in plan_str.split('->'):
+        for node_str in self.full_str.split('->'):
             node_level = prev_level
             # trailing spaces after the previous newline is the indent of the next node
             node_end = node_str.rfind('\n')
@@ -375,13 +374,14 @@ class PostgresExecutionPlan(ExecutionPlan):
 
             if match := pat_plan_node_header.search(node_props[0]):
                 node_name = match.group(1)
-                (node_type, table_name, table_alias, index_name) = self.decompose_node_name(node_name)
+                (node_type, table_name, table_alias, index_name, is_backward) = self.decompose_node_name(node_name)
 
                 if table_name:
                     node = ScanNode()
                     node.table_name = table_name
                     node.table_alias = table_alias
                     node.index_name = index_name
+                    node.is_backward = is_backward
                 else:
                     node = PlanNode()
                 node.node_type = node_type
