@@ -247,7 +247,7 @@ class YugabyteLocalRepository(Yugabyte):
                          '--build-yugabyted-ui',
                          '--no-tests',
                          '--skip-java-build'],
-                        stdout=subprocess.DEVNULL,
+                        stdout=subprocess.STDOUT,
                         stderr=subprocess.STDOUT,
                         cwd=self.path)
 
