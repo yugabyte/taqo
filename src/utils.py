@@ -2,6 +2,7 @@ import hashlib
 import re
 import time
 import traceback
+import pglast
 from copy import copy
 
 import psycopg2
@@ -167,20 +168,18 @@ def get_alias_table_names(sql_str, tables_in_sut):
     # aliases so remove them from the query. 
     parser = Parser(remove_with_ordinality(sql_str))
 
-    # todo this code contains too many magic
-    # todo so it has more smell rather that magic
-    # 'where' may occur in table_name_in_query aliases_in_query
-    tables_in_query = parser.tables
-    aliases_in_query = parser.tables_aliases
-
-    result_tables = {alias: table_name for alias, table_name in aliases_in_query.items()
-                     if check_alias_validity(alias) and table_name in table_names}
-
-    if not len(result_tables) == len(tables_in_query) == len(aliases_in_query):
-        # add tables w/o aliases
-        for table in tables_in_query:
-            if table not in result_tables.keys():
-                result_tables[table] = table
+    statement = pglast.parser.parse_sql(sql_str)[0].stmt
+    result_tables = {}
+    for from_clause in statement.fromClause:
+        if hasattr(from_clause, "jointype"):
+            for table in [from_clause.larg, from_clause.rarg]:
+                table_name = table.relname
+                alias = table.alias if table.alias else table_name
+                result_tables[alias] = table_name
+        if hasattr(from_clause, "relname"):
+            table_name = from_clause.relname
+            alias = from_clause.alias.aliasname if from_clause.alias else table_name
+            result_tables[alias] = table_name
 
     # return usable table objects list
     table_objects_in_query = []
