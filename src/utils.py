@@ -174,7 +174,7 @@ def get_alias_table_names(sql_str, tables_in_sut):
         if hasattr(from_clause, "jointype"):
             for table in [from_clause.larg, from_clause.rarg]:
                 table_name = table.relname
-                alias = table.alias if table.alias else table_name
+                alias = table.alias.aliasname if table.alias else table_name
                 result_tables[alias] = table_name
         if hasattr(from_clause, "relname"):
             table_name = from_clause.relname
