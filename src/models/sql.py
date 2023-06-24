@@ -187,7 +187,8 @@ class SQLModel(QTFModel):
             try:
                 for column in columns:
                     is_indexed = any(column == row[2] for row in result)
-                    fields.append(Field(column, is_indexed))
+                    indexes = list(row[1] for row in result if column == row[2])
+                    fields.append(Field(column, is_indexed, indexes))
             except Exception as e:
                 self.logger.exception(result, e)
 

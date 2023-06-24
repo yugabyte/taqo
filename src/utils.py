@@ -1,4 +1,5 @@
 import hashlib
+import json
 import re
 import time
 import traceback
@@ -161,35 +162,76 @@ def check_alias_validity(alias: str):
     return upper_alias not in SQL_KEYWORDS
 
 
+def get_tables(tables, object):
+    if isinstance(object, list):
+        for subfield in object:
+            get_tables(tables, subfield)
+    elif isinstance(object, dict):
+        for key, value in object.items():
+            if key == 'RangeVar':
+                table_name = value['relname']
+                alias = value['alias']['aliasname'] if value.get('alias') else table_name
+                tables[alias] = table_name
+
+            get_tables(tables, value)
+
+    return tables
+
+
+def get_fields(fields, object):
+    if isinstance(object, list):
+        for subfield in object:
+            get_fields(fields, subfield)
+    elif isinstance(object, dict):
+        for key, value in object.items():
+            if key == 'ColumnRef':
+                value = value['fields']
+                if len(value) == 2:
+                    table = value[0]["String"]["sval"]
+                    field = value[1]["String"]["sval"]
+
+                    fields.append([table, field])
+                else:
+                    # todo guess the table
+                    pass
+
+            get_fields(fields, value)
+
+    return fields
+
 def get_alias_table_names(sql_str, tables_in_sut):
-    table_names = [table.name for table in tables_in_sut]
-
     # 'WITH ORDINALITY' clauses get misinterpreted as
-    # aliases so remove them from the query. 
-    parser = Parser(remove_with_ordinality(sql_str))
+    # aliases so remove them from the query.
+    _, _, sql_wo_parameters = parse_clear_and_parametrized_sql(sql_str)
 
-    statement = pglast.parser.parse_sql(sql_str)[0].stmt
-    result_tables = {}
-    for from_clause in statement.fromClause:
-        if hasattr(from_clause, "jointype"):
-            for table in [from_clause.larg, from_clause.rarg]:
-                table_name = table.relname
-                alias = table.alias.aliasname if table.alias else table_name
-                result_tables[alias] = table_name
-        if hasattr(from_clause, "relname"):
-            table_name = from_clause.relname
-            alias = from_clause.alias.aliasname if from_clause.alias else table_name
-            result_tables[alias] = table_name
+    statement_json = pglast.parser.parse_sql_json(sql_wo_parameters)
+    statement_dict = json.loads(statement_json)
+
+    tables = get_tables({}, statement_dict)
+    fields = get_fields([], statement_dict)
 
     # return usable table objects list
     table_objects_in_query = []
-    for alias, table_name_in_query in result_tables.items():
+    for alias, table_name_in_query in tables.items():
         for real_table in tables_in_sut:
             if table_name_in_query == real_table.name \
                     or ('.' in table_name_in_query
                         and table_name_in_query.split(".")[1] == real_table.name):
-                real_table.alias = alias
-                table_objects_in_query.append(real_table)
+                table_copy = real_table.copy()
+                table_copy.alias = alias
+
+                fields_to_exclude = []
+                for field in fields:
+                    if field[0] != table_copy.alias:
+                        fields_to_exclude.append(field[1])
+
+                new_fields = []
+                for field in table_copy.fields:
+                    if field.name not in fields_to_exclude:
+                        new_fields.append(field)
+                table_copy.fields = new_fields
+
+                table_objects_in_query.append(table_copy)
 
     return table_objects_in_query
 

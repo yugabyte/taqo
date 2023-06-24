@@ -13,6 +13,10 @@ from config import Config
 class Field:
     name: str = None
     is_index: bool = None
+    indexes: List[str] = None
+
+    def copy(self):
+        return Field(self.name, self.is_index, self.indexes.copy())
 
 
 @dataclasses.dataclass
@@ -21,6 +25,13 @@ class Table:
     name: str = None
     fields: List[Field] = None
     size: int = 0
+
+    def copy(self):
+        fields = []
+        for field in self.fields:
+            fields.append(field.copy())
+
+        return Table(self.alias, self.name, fields, self.size)
 
 
 @dataclasses.dataclass

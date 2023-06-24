@@ -198,10 +198,14 @@ class Leading:
                 self.joins.append(f"{self.LEADING} ( {prev_el} ) {join}")
 
         for table in self.alias_to_table:
-            tables_and_idxs = list({f"{Scans.INDEX.value}({table.alias})"
-                                    for field in table.fields if field.is_index})
-            tables_and_idxs += {f"{Scans.INDEX_ONLY.value}({table.alias})"
-                                for field in table.fields if field.is_index}
+            indexes = []
+            for field in table.fields:
+                if field.is_index:
+                    indexes += field.indexes
+
+            tables_and_idxs = list({f"{Scans.INDEX.value}({index})" for index in indexes})
+            tables_and_idxs += {f"{Scans.INDEX_ONLY.value}({index})" for index in indexes}
+
             tables_and_idxs.append(f"{Scans.SEQ.value}({table.alias})")
             self.table_scan_hints.append(tables_and_idxs)
 
