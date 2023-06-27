@@ -36,6 +36,7 @@ class Table:
     alias: str = None
     name: str = None
     fields: List[Field] = None
+    rows: int = 0
     size: int = 0
 
     def copy(self):
