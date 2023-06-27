@@ -69,12 +69,12 @@ class SQLModel(QTFModel):
             with conn.cursor() as cur:
                 evaluate_sql(cur, f"SET statement_timeout = '{self.config.ddl_query_timeout}s'")
 
-                path_to_file = f"{self.get_model_path()}/{file_name}.sql"
+                path_to_file = f"{get_model_path(self.config.model)}/{file_name}.sql"
 
                 if not exists(path_to_file):
                     self.logger.warn(f"Unable to locate file {path_to_file}")
                 else:
-                    with open(f"{self.get_model_path()}/{file_name}.sql", "r") as sql_file:
+                    with open(f"{get_model_path(self.config.model)}/{file_name}.sql", "r") as sql_file:
                         full_queries = self.apply_variables('\n'.join(sql_file.readlines()))
                         for query in tqdm(full_queries.split(";")):
                             try:
