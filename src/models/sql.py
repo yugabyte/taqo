@@ -13,7 +13,7 @@ from config import DDLStep
 from objects import QueryTips, Field
 from db.postgres import PostgresQuery, Table
 from models.abstract import QTFModel
-from utils import get_alias_table_names, evaluate_sql, get_md5
+from utils import get_alias_table_names, evaluate_sql, get_md5, get_model_path
 
 
 class SQLModel(QTFModel):
@@ -50,12 +50,6 @@ class SQLModel(QTFModel):
 
         return created_tables, teardown_queries + create_queries + analyze_queries + import_queries
 
-    def get_model_path(self):
-        if self.config.model.startswith("/") or self.config.model.startswith("."):
-            return self.config.model
-        else:
-            return f"sql/{self.config.model}"
-
     def evaluate_ddl_queries(self, conn,
                              step_prefix: DDLStep,
                              db_prefix=None):
@@ -65,7 +59,7 @@ class SQLModel(QTFModel):
         file_name = step_prefix.name.lower()
 
         db_prefix = self.config.ddl_prefix or db_prefix
-        if db_prefix and exists(f"{self.get_model_path()}/{db_prefix}.{file_name}.sql"):
+        if db_prefix and exists(f"{get_model_path(self.config.model)}/{db_prefix}.{file_name}.sql"):
             file_name = f"{db_prefix}.{file_name}"
 
         model_queries = []
@@ -129,12 +123,14 @@ class SQLModel(QTFModel):
     def load_tables_from_public(self, cur):
         created_tables = []
 
+        parse_catalog_clause = " or table_schema = 'pg_catalog'" if self.config.model_config.parse_catalog else ""
+
         self.logger.info("Loading tables...")
         cur.execute(
-            """
+            f"""
             select table_name, table_schema 
             from information_schema.tables 
-            where table_schema = 'public' or table_schema = 'pg_catalog';
+            where table_schema = 'public' {parse_catalog_clause};
             """)
         tables = []
         result = list(cur.fetchall())
@@ -227,7 +223,7 @@ class SQLModel(QTFModel):
 
     def get_queries(self, tables):
         queries = []
-        query_file_lists = sorted(list(glob.glob(f"{self.get_model_path()}/queries/*.sql")))
+        query_file_lists = sorted(list(glob.glob(f"{get_model_path(self.config.model)}/queries/*.sql")))
         for query in query_file_lists:
             with open(query, "r") as query_file:
                 full_queries = self.apply_variables(''.join(query_file.readlines()))

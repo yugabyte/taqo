@@ -54,6 +54,7 @@ pat_plan_node_header = re.compile(''.join(re_plan_node_header))
 re_decompose_scan_node = '(?P<type>\S+(?:\s+\S+)* Scan(?P<backward>\s+Backward)*)(?: using (?P<index>\S+))* on (?P<table>\S+)(?: (?P<alias>\S+))*'
 pat_decompose_scan_node = re.compile(re_decompose_scan_node)
 
+
 class Postgres(Database):
 
     def establish_connection(self, database: str = "postgres"):
@@ -136,44 +137,25 @@ class Joins(Enum):
 class Leading:
     LEADING = "Leading"
 
-    def __init__(self, config: Config, alias_to_table: List[Table]):
+    def __init__(self, config: Config, tables: List[Table]):
         self.config = config
-        self.alias_to_table = alias_to_table
+        self.tables = tables
         self.joins = []
         self.table_scan_hints = []
 
     def construct(self):
         if self.config.all_pairs_threshold == -1:
             self.get_all_combinations()
-        elif len(self.alias_to_table) < self.config.all_pairs_threshold:
+        elif len(self.tables) < self.config.all_pairs_threshold:
             self.get_all_combinations()
-        elif len(self.alias_to_table) == self.config.all_pairs_threshold:
+        elif len(self.tables) == self.config.all_pairs_threshold:
             self.get_all_pairs_with_all_table_permutations()
         else:
             self.get_all_pairs_combinations()
 
-    def filtered_permutations(self, tables):
-        # todo check how it works
-        perms = list(itertools.permutations(tables))
-
-        if len(tables) < self.config.all_pairs_threshold:
-            return perms
-
-        combs = list(itertools.combinations(tables, len(tables) - 1))
-
-        result = []
-        for perm in perms:
-            perm_join = "".join([table.name for table in perm])
-            for comb in combs:
-                comb_join = "".join([table.name for table in comb])
-                if comb_join in perm_join:
-                    result.append(perm)
-
-        return result
-
     def get_all_combinations(self):
         # algorithm with all possible combinations
-        for tables_perm in itertools.permutations(self.alias_to_table):
+        for tables_perm in itertools.permutations(self.tables):
             prev_el = None
             joins = []
             joined_tables = []
@@ -197,24 +179,31 @@ class Leading:
             for join in joins:
                 self.joins.append(f"{self.LEADING} ( {prev_el} ) {join}")
 
-        for table in self.alias_to_table:
-            indexes = []
-            for field in table.fields:
-                if field.is_index:
-                    indexes += field.indexes
+        for table in self.tables:
+            tables_and_idxs = list(f"{Scans.SEQ.value}({table.alias})")
 
-            tables_and_idxs = list({f"{Scans.INDEX.value}({index})" for index in indexes})
-            tables_and_idxs += {f"{Scans.INDEX_ONLY.value}({index})" for index in indexes}
+            if self.config.all_index_check:
+                indexes = []
+                for field in table.fields:
+                    if field.is_index:
+                        indexes += field.indexes
 
-            tables_and_idxs.append(f"{Scans.SEQ.value}({table.alias})")
+                tables_and_idxs += {f"{Scans.INDEX.value}({index})" for index in indexes}
+                tables_and_idxs += {f"{Scans.INDEX_ONLY.value}({index})" for index in indexes}
+            else:
+                tables_and_idxs += {f"{Scans.INDEX.value}({table.alias})"
+                                    for field in table.fields if field.is_index}
+                tables_and_idxs += {f"{Scans.INDEX_ONLY.value}({table.alias})"
+                                    for field in table.fields if field.is_index}
+
             self.table_scan_hints.append(tables_and_idxs)
 
     def get_all_pairs_with_all_table_permutations(self):
         # algorithm with all possible table permutations
         # but with all pairs scans
-        table_permutations = list(itertools.permutations(self.alias_to_table))
-        join_product = list(AllPairs([list(Joins) for _ in range(len(self.alias_to_table) - 1)]))
-        scan_product = list(AllPairs([list(Scans) for _ in range(len(self.alias_to_table))]))
+        table_permutations = list(itertools.permutations(self.tables))
+        join_product = list(AllPairs([list(Joins) for _ in range(len(self.tables) - 1)]))
+        scan_product = list(AllPairs([list(Scans) for _ in range(len(self.tables))]))
 
         for tables, joins, scans in AllPairs([table_permutations, join_product, scan_product]):
             prev_el = None
@@ -237,16 +226,27 @@ class Leading:
             self.joins.append(f"{leading_hint} {query_joins} {scan_hints}")
 
     def get_all_pairs_combinations(self):
-        if len(self.alias_to_table) <= 1:
+        if len(self.tables) <= 1:
             return
 
-        scan_product = list(AllPairs([list(Scans) for _ in range(len(self.alias_to_table))]))
+        for table in self.tables:
+            tables_and_idxs = list([f"{Scans.SEQ.value}({table.alias})"])
 
-        for scans in scan_product:
-            scan_hints = " ".join(
-                f"{scan.value}({self.alias_to_table[table_idx].alias})" for table_idx, scan in enumerate(scans))
+            if self.config.all_index_check:
+                indexes = []
+                for field in table.fields:
+                    if field.is_index:
+                        indexes += field.indexes
 
-            self.joins.append(f"{scan_hints}")
+                tables_and_idxs += [f"{Scans.INDEX.value}({index})" for index in indexes]
+                tables_and_idxs += [f"{Scans.INDEX_ONLY.value}({index})" for index in indexes]
+            else:
+                tables_and_idxs += [f"{Scans.INDEX.value}({table.alias})"
+                                    for field in table.fields if field.is_index]
+                tables_and_idxs += [f"{Scans.INDEX_ONLY.value}({table.alias})"
+                                    for field in table.fields if field.is_index]
+
+            self.table_scan_hints.append(tables_and_idxs)
 
 
 @dataclasses.dataclass

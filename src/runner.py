@@ -1,8 +1,9 @@
 import argparse
+from os.path import exists
 
 from pyhocon import ConfigFactory
 
-from config import Config, init_logger, ConnectionConfig, DDLStep
+from config import Config, init_logger, ConnectionConfig, DDLStep, ModelConfig
 from db.factory import create_database
 from db.postgres import DEFAULT_USERNAME, DEFAULT_PASSWORD, PostgresResultsLoader
 from reports.adoc.regression import RegressionReport
@@ -11,7 +12,7 @@ from reports.adoc.selectivity import SelectivityReport
 from reports.adoc.taqo import TaqoReport
 
 from scenario import Scenario
-from utils import get_bool_from_object
+from utils import get_bool_from_object, get_model_path
 
 
 def parse_ddls(ddl_ops):
@@ -210,6 +211,16 @@ if __name__ == "__main__":
     configuration = ConfigFactory.parse_file(args.config)
     ddls = parse_ddls(args.ddls)
 
+    model = args.model
+    path_to_file = f"{get_model_path(model)}/model.conf"
+    parse_catalog_clause = ""
+    parse_catalog = False
+
+    model_config = ModelConfig()
+    if exists(path_to_file):
+        parsed_model_config = ConfigFactory.parse_file(path_to_file)
+        model_config.parse_catalog = parsed_model_config.get("parse-catalog", False)
+
     options_config = {}
     if args.options:
         for option in args.options:
@@ -245,7 +256,8 @@ if __name__ == "__main__":
                                     password=args.password,
                                     database=args.database),
 
-        model=args.model,
+        model=model,
+        model_config=model_config,
         output=args.output,
         ddls=ddls,
         remote_data_path=args.remote_data_path,
@@ -254,8 +266,7 @@ if __name__ == "__main__":
         plans_only=args.plans_only,
         server_side_execution=get_bool_from_object(args.server_side_execution),
 
-        enable_statistics=args.enable_statistics or get_bool_from_object(
-            configuration.get("enable-statistics", False)),
+        enable_statistics=args.enable_statistics or get_bool_from_object(configuration.get("enable-statistics", False)),
         explain_clause=args.explain_clause or configuration.get("explain-clause", "EXPLAIN"),
         session_props=configuration.get("session-props") +
                       (args.session_props.split(",") if args.session_props else []),
@@ -265,6 +276,7 @@ if __name__ == "__main__":
         skip_timeout_delta=int(configuration.get("skip-timeout-delta", 1)),
         ddl_query_timeout=int(configuration.get("ddl-query-timeout", 3600)),
         test_query_timeout=int(configuration.get("test-query-timeout", 1200)),
+        all_index_check=get_bool_from_object(configuration.get("all-index-check", True)),
         look_near_best_plan=get_bool_from_object(configuration.get("look-near-best-plan", True)),
         all_pairs_threshold=int(configuration.get("all-pairs-threshold", 3)),
 

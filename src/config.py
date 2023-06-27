@@ -51,6 +51,11 @@ class ConnectionConfig:
 
 
 @dataclasses.dataclass
+class ModelConfig:
+    parse_catalog: bool = False
+
+
+@dataclasses.dataclass
 class Config(metaclass=Singleton):
     logger: logging.Logger = None
 
@@ -78,6 +83,7 @@ class Config(metaclass=Singleton):
 
     test: str = None
     model: str = None
+    model_config: ModelConfig = None
     basic_multiplier: int = None
 
     ddls: Set[DDLStep] = None
@@ -95,46 +101,47 @@ class Config(metaclass=Singleton):
     ddl_query_timeout: int = None
     test_query_timeout: int = None
     all_pairs_threshold: int = None
+    all_index_check: bool = True
 
     asciidoctor_path: str = None
     clear: bool = False
 
     def __str__(self):
         return "Configuration" + \
-               f"DB - {self.database.__class__.__name__}\n" \
-               f"\n" \
-               f"remote_data_path - {self.remote_data_path}\n" \
-               f"ddl_prefix - {self.ddl_prefix}\n" \
-               f"with_optimizations - {self.with_optimizations}\n" \
-               f"source_path - {self.source_path}\n" \
-               f"output - {self.output}\n" \
-               f"\n" \
-               f"revision - {self.revision}\n" \
-               f"num_nodes - {self.num_nodes}\n" \
-               f"tserver_flags - {self.tserver_flags}\n" \
-               f"master_flags - {self.master_flags}\n" \
-               f"\n" \
-               f"(initial) connection - {self.connection}\n" \
-               f"enable_statistics - {self.enable_statistics}\n" \
-               f"explain_clause - {self.explain_clause}\n" \
-               f"session_props - {self.session_props}\n" \
-               f"\n" \
-               f"test - {self.test}\n" \
-               f"model - {self.model}\n" \
-               f"basic_multiplier - {self.basic_multiplier}\n" \
-               f"ddls - {[m.name for m in self.ddls]}\n" \
-               f"clean_db - {self.clean_db}\n" \
-               f"allow_destroy_db - {self.allow_destroy_db}\n" \
-               f"clean_build - {self.clean_build}\n" \
-               f"skip_percentage_delta - {self.skip_percentage_delta}\n" \
-               f"look_near_best_plan - {self.look_near_best_plan}\n" \
-               f"num_queries - {self.num_queries}\n" \
-               f"parametrized - {self.parametrized}\n" \
-               f"num_retries - {self.num_retries}\n" \
-               f"num_warmup - {self.num_warmup}\n" \
-               f"skip_timeout_delta - {self.skip_timeout_delta}\n" \
-               f"ddl_query_timeout - {self.ddl_query_timeout}\n" \
-               f"test_query_timeout - {self.test_query_timeout}\n" \
-               f"all_pairs_threshold - {self.all_pairs_threshold}\n" \
-               f"asciidoctor_path - {self.asciidoctor_path}\n" \
-               f"clear - {self.clear}\n"
+            f"DB - {self.database.__class__.__name__}\n" \
+            f"\n" \
+            f"remote_data_path - {self.remote_data_path}\n" \
+            f"ddl_prefix - {self.ddl_prefix}\n" \
+            f"with_optimizations - {self.with_optimizations}\n" \
+            f"source_path - {self.source_path}\n" \
+            f"output - {self.output}\n" \
+            f"\n" \
+            f"revision - {self.revision}\n" \
+            f"num_nodes - {self.num_nodes}\n" \
+            f"tserver_flags - {self.tserver_flags}\n" \
+            f"master_flags - {self.master_flags}\n" \
+            f"\n" \
+            f"(initial) connection - {self.connection}\n" \
+            f"enable_statistics - {self.enable_statistics}\n" \
+            f"explain_clause - {self.explain_clause}\n" \
+            f"session_props - {self.session_props}\n" \
+            f"\n" \
+            f"test - {self.test}\n" \
+            f"model - {self.model}\n" \
+            f"basic_multiplier - {self.basic_multiplier}\n" \
+            f"ddls - {[m.name for m in self.ddls]}\n" \
+            f"clean_db - {self.clean_db}\n" \
+            f"allow_destroy_db - {self.allow_destroy_db}\n" \
+            f"clean_build - {self.clean_build}\n" \
+            f"skip_percentage_delta - {self.skip_percentage_delta}\n" \
+            f"look_near_best_plan - {self.look_near_best_plan}\n" \
+            f"num_queries - {self.num_queries}\n" \
+            f"parametrized - {self.parametrized}\n" \
+            f"num_retries - {self.num_retries}\n" \
+            f"num_warmup - {self.num_warmup}\n" \
+            f"skip_timeout_delta - {self.skip_timeout_delta}\n" \
+            f"ddl_query_timeout - {self.ddl_query_timeout}\n" \
+            f"test_query_timeout - {self.test_query_timeout}\n" \
+            f"all_pairs_threshold - {self.all_pairs_threshold}\n" \
+            f"asciidoctor_path - {self.asciidoctor_path}\n" \
+            f"clear - {self.clear}\n"

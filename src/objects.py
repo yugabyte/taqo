@@ -10,6 +10,18 @@ from config import Config
 
 
 @dataclasses.dataclass
+class FieldInTableHelper:
+    table_name: str
+    field_name: str
+
+    def copy(self):
+        return FieldInTableHelper(self.table_name, self.field_name)
+
+    def __hash__(self):
+        return hash(f"{self.table_name}.{self.field_name}")
+
+
+@dataclasses.dataclass
 class Field:
     name: str = None
     is_index: bool = None
@@ -32,6 +44,9 @@ class Table:
             fields.append(field.copy())
 
         return Table(self.alias, self.name, fields, self.size)
+
+    def __hash__(self):
+        return hash(f"{self.alias}.{self.name}")
 
 
 @dataclasses.dataclass
