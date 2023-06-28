@@ -203,7 +203,7 @@ class Leading:
         # but with all pairs scans
         table_permutations = list(itertools.permutations(self.tables))
         join_product = list(AllPairs([list(Joins) for _ in range(len(self.tables) - 1)]))
-        scan_product = list(AllPairs([list(Scans) for _ in range(len(self.tables))]))
+        scan_product = list(AllPairs(self.get_table_scan_hints()))
 
         for tables, joins, scans in AllPairs([table_permutations, join_product, scan_product]):
             prev_el = None
@@ -219,9 +219,7 @@ class Leading:
                     query_joins += f" {next(joins).construct(joined_tables)}"
 
             leading_hint = f"{self.LEADING} ({prev_el})"
-            scan_hints = " ".join(
-                f"{scan.value}({tables[table_idx].alias})" for table_idx, scan in
-                enumerate(scans))
+            scan_hints = " ".join(scans)
 
             self.joins.append(f"{leading_hint} {query_joins} {scan_hints}")
 
@@ -229,6 +227,10 @@ class Leading:
         if len(self.tables) <= 1:
             return
 
+        self.table_scan_hints = list(AllPairs(self.get_table_scan_hints()))
+
+    def get_table_scan_hints(self):
+        table_scan_hints = []
         for table in self.tables:
             tables_and_idxs = list([f"{Scans.SEQ.value}({table.alias})"])
 
@@ -246,7 +248,8 @@ class Leading:
                 tables_and_idxs += [f"{Scans.INDEX_ONLY.value}({table.alias})"
                                     for field in table.fields if field.is_index]
 
-            self.table_scan_hints.append(tables_and_idxs)
+            table_scan_hints.append(tables_and_idxs)
+        return table_scan_hints
 
 
 @dataclasses.dataclass
