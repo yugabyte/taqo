@@ -143,7 +143,8 @@ class Scenario:
 
         self.logger.debug(f"{len(list_of_optimizations)} optimizations generated")
         progress_bar = tqdm(list_of_optimizations)
-        num_skipped = 0
+        duplicates = 0
+        timed_out = 0
         min_execution_time = original_query.execution_time_ms \
             if original_query.execution_time_ms > 0 else (self.config.test_query_timeout * 1000)
         original_query.optimizations = []
@@ -177,7 +178,7 @@ class Scenario:
                 # failed by timeout - it's ok just skip optimization
                 self.logger.debug(f"Getting execution plan failed with {e}")
 
-                num_skipped += 1
+                timed_out += 1
                 optimization.execution_time_ms = 0
                 optimization.execution_plan = database.get_execution_plan("")
                 continue
@@ -190,14 +191,16 @@ class Scenario:
             if self.config.plans_only:
                 original_query.execution_time_ms = \
                     original_query.execution_plan.get_estimated_cost()
-            elif not_unique_plan or not calculate_avg_execution_time(
+            elif not_unique_plan:
+                duplicates += 1
+            elif not calculate_avg_execution_time(
                     cur,
                     optimization,
                     self.sut_database,
                     query_str=query_str,
                     num_retries=int(self.config.num_retries),
                     connection=connection):
-                num_skipped += 1
+                timed_out += 1
 
             # get new minimum execution time
             if optimization.execution_time_ms != 0 and \
@@ -205,7 +208,7 @@ class Scenario:
                 min_execution_time = optimization.execution_time_ms
 
             progress_bar.set_postfix(
-                {'skipped': num_skipped, 'min_execution_time_ms': min_execution_time})
+                {'dp': duplicates, 'to': timed_out, 'min_time_ms': min_execution_time})
 
         return list_of_optimizations
 
