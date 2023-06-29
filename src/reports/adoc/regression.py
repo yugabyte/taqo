@@ -238,9 +238,9 @@ class RegressionReport(Report):
                                                if yb_v2_query.execution_time_ms != 0 else 99999999)
                 ratio_color = "[green]" if ratio_x3 <= 1.0 else "[red]"
 
-                ratio_best = yb_v2_query.execution_time_ms / yb_v1_query.execution_time_ms \
+                ratio_best = yb_v2_best.execution_time_ms / yb_v1_best.execution_time_ms \
                     if yb_v1_best.execution_time_ms != 0 and success else 99999999
-                ratio_best_x3_str = "{:.2f}".format(yb_v2_query.execution_time_ms / yb_v1_query.execution_time_ms
+                ratio_best_x3_str = "{:.2f}".format(yb_v2_best.execution_time_ms / yb_v1_best.execution_time_ms
                                                     if yb_v1_best.execution_time_ms != 0 and success else 99999999)
                 ratio_best_color = "[green]" if ratio_best <= 1.0 else "[red]"
 
