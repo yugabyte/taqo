@@ -165,6 +165,7 @@ class RegressionReport(Report):
         yb_v1_bests = 0
         yb_v2_bests = 0
         qe_bests_geo = 1
+        qe_default_geo = 1
         qo_yb_v1_bests = 1
         qo_yb_v2_bests = 1
         total = 0
@@ -177,6 +178,7 @@ class RegressionReport(Report):
                 yb_v2_best = yb_v2_query.get_best_optimization(self.config)
 
                 qe_bests_geo *= yb_v1_best.execution_time_ms / yb_v2_best.execution_time_ms
+                qe_default_geo *= yb_v1_query.execution_time_ms / yb_v2_query.execution_time_ms
                 qo_yb_v1_bests *= (yb_v1_query.execution_time_ms
                                    if yb_v1_query.execution_time_ms > 0 else 1.0) / \
                                   (yb_v1_best.execution_time_ms
@@ -192,6 +194,8 @@ class RegressionReport(Report):
         self.report += f"|Statistic|{self.v1_name}|{self.v2_name}\n"
         self.report += f"|Best execution plan picked|{'{:.2f}'.format(float(yb_v1_bests) * 100 / total)}%" \
                        f"|{'{:.2f}'.format(float(yb_v2_bests) * 100 / total)}%\n"
+        self.report += f"|Geomeric mean QE default\n" \
+                       f"2+m|{'{:.2f}'.format(qe_default_geo ** (1 / total))}\n"
         self.report += f"|Geomeric mean QE best\n" \
                        f"2+m|{'{:.2f}'.format(qe_bests_geo ** (1 / total))}\n"
         self.report += f"|Geomeric mean QO default vs best" \
@@ -208,8 +212,8 @@ class RegressionReport(Report):
                            f"|{self.v1_name} Best" \
                            f"|{self.v2_name}" \
                            f"|{self.v2_name} Best" \
-                           f"|Ratio {self.v1_name} vs {self.v2_name}" \
-                           f"|Ratio Best {self.v1_name} vs {self.v2_name}" \
+                           f"|Ratio {self.v2_name} vs {self.v1_name}" \
+                           f"|Ratio Best {self.v2_name} vs {self.v1_name}" \
                            f"|Query\n"
             self.report += f"{num_columns}+m|{tag}.sql\n"
             for query in queries:
@@ -228,13 +232,13 @@ class RegressionReport(Report):
 
                 best_yb_pg_equality = "(eq) " if yb_v1_best.compare_plans(yb_v2_best.execution_plan) else ""
 
-                ratio_x3 = yb_v1_query.execution_time_ms / (3 * yb_v2_query.execution_time_ms) \
-                    if yb_v2_query.execution_time_ms != 0 else 99999999
+                ratio_x3 = yb_v2_query.execution_time_ms / yb_v1_query.execution_time_ms \
+                    if yb_v1_query.execution_time_ms != 0 else 99999999
                 ratio_x3_str = "{:.2f}".format(yb_v1_query.execution_time_ms / yb_v2_query.execution_time_ms
                                                if yb_v2_query.execution_time_ms != 0 else 99999999)
                 ratio_color = "[green]" if ratio_x3 <= 1.0 else "[red]"
 
-                ratio_best = yb_v1_best.execution_time_ms / (3 * yb_v2_best.execution_time_ms) \
+                ratio_best = yb_v2_best.execution_time_ms / yb_v1_best.execution_time_ms \
                     if yb_v1_best.execution_time_ms != 0 and success else 99999999
                 ratio_best_x3_str = "{:.2f}".format(yb_v1_best.execution_time_ms / yb_v2_best.execution_time_ms
                                                     if yb_v1_best.execution_time_ms != 0 and success else 99999999)
@@ -447,21 +451,11 @@ class RegressionReport(Report):
         self._end_source()
         self._end_collapsible()
 
-        self._start_collapsible(f"{default_v1_v2_equality}{self.v1_name} default vs {self.v2_name} default")
-        self._start_source(["diff"])
-
-        self.report += self._get_plan_diff(
-            v1_query.execution_plan.full_str,
-            v2_query.execution_plan.full_str,
-        )
-        self._end_source()
-        self._end_collapsible()
-
-        self._start_collapsible(f"{best_yb_pg_equality}{self.v2_name} best vs {self.v1_name} best")
+        self._start_collapsible(f"{best_yb_pg_equality}{self.v1_name} best vs {self.v2_name} best")
         self._start_source(["diff"])
         self.report += self._get_plan_diff(
-            v2_best.execution_plan.full_str,
             v1_best.execution_plan.full_str,
+            v2_best.execution_plan.full_str,
         )
         self._end_source()
         self._end_collapsible()
