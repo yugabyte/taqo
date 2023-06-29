@@ -219,6 +219,9 @@ if __name__ == "__main__":
     model_config = ModelConfig()
     if exists(path_to_file):
         parsed_model_config = ConfigFactory.parse_file(path_to_file)
+        global_option = get_bool_from_object(configuration.get("all-index-check", True))
+
+        model_config.all_index_check = global_option and parsed_model_config.get("all-index-check", True)
         model_config.parse_catalog = parsed_model_config.get("parse-catalog", False)
 
     options_config = {}
@@ -276,7 +279,6 @@ if __name__ == "__main__":
         skip_timeout_delta=int(configuration.get("skip-timeout-delta", 1)),
         ddl_query_timeout=int(configuration.get("ddl-query-timeout", 3600)),
         test_query_timeout=int(configuration.get("test-query-timeout", 1200)),
-        all_index_check=get_bool_from_object(configuration.get("all-index-check", True)),
         look_near_best_plan=get_bool_from_object(configuration.get("look-near-best-plan", True)),
         all_pairs_threshold=int(configuration.get("all-pairs-threshold", 3)),
 

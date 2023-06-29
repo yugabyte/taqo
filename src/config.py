@@ -52,6 +52,7 @@ class ConnectionConfig:
 
 @dataclasses.dataclass
 class ModelConfig:
+    all_index_check: bool = True
     parse_catalog: bool = False
 
 
@@ -101,7 +102,6 @@ class Config(metaclass=Singleton):
     ddl_query_timeout: int = None
     test_query_timeout: int = None
     all_pairs_threshold: int = None
-    all_index_check: bool = True
 
     asciidoctor_path: str = None
     clear: bool = False

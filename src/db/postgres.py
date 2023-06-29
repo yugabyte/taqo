@@ -182,7 +182,7 @@ class Leading:
         for table in self.tables:
             tables_and_idxs = list(f"{Scans.SEQ.value}({table.alias})")
 
-            if self.config.all_index_check:
+            if self.config.model_config.all_index_check:
                 indexes = []
                 for field in table.fields:
                     if field.is_index:
@@ -234,7 +234,7 @@ class Leading:
         for table in self.tables:
             tables_and_idxs = list([f"{Scans.SEQ.value}({table.alias})"])
 
-            if self.config.all_index_check:
+            if self.config.model_config.all_index_check:
                 indexes = []
                 for field in table.fields:
                     if field.is_index:
