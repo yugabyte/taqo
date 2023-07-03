@@ -185,41 +185,47 @@ class Scenario:
 
             self.try_to_get_default_explain_hints(cur, optimization, original_query)
 
-            try:
-                self.sut_database.prepare_query_execution(cur)
-                evaluate_sql(cur, optimization.get_explain())
-                optimization.execution_plan = database.get_execution_plan(
-                    '\n'.join(
-                        str(item[0]) for item in cur.fetchall()))
-
-                connection.rollback()
-            except psycopg2.errors.QueryCanceled as e:
-                # failed by timeout - it's ok just skip optimization
-                self.logger.debug(f"Getting execution plan failed with {e}")
-
-                timed_out += 1
-                optimization.execution_time_ms = 0
-                optimization.execution_plan = database.get_execution_plan("")
-                continue
-
-            exec_plan_md5 = get_md5(optimization.execution_plan.get_clean_plan())
+            # check that execution plan is unique
+            evaluate_sql(cur, optimization.get_explain())
+            execution_plan = database.get_execution_plan(
+                '\n'.join(str(item[0]) for item in cur.fetchall())
+            )
+            exec_plan_md5 = get_md5(execution_plan.get_clean_plan())
             not_unique_plan = exec_plan_md5 in execution_plans_checked
             execution_plans_checked.add(exec_plan_md5)
             query_str = optimization.get_explain_analyze() if self.config.server_side_execution else None
 
-            if self.config.plans_only:
-                original_query.execution_time_ms = \
-                    original_query.execution_plan.get_estimated_cost()
-            elif not_unique_plan:
+            if not_unique_plan:
                 duplicates += 1
-            elif not calculate_avg_execution_time(
-                    cur,
-                    optimization,
-                    self.sut_database,
-                    query_str=query_str,
-                    num_retries=int(self.config.num_retries),
-                    connection=connection):
-                timed_out += 1
+            else:
+                try:
+                    self.sut_database.prepare_query_execution(cur)
+                    evaluate_sql(cur, optimization.get_explain())
+                    optimization.execution_plan = database.get_execution_plan(
+                        '\n'.join(str(item[0]) for item in cur.fetchall())
+                    )
+
+                    connection.rollback()
+                except psycopg2.errors.QueryCanceled as e:
+                    # failed by timeout - it's ok just skip optimization
+                    self.logger.debug(f"Getting execution plan failed with {e}")
+
+                    timed_out += 1
+                    optimization.execution_time_ms = 0
+                    optimization.execution_plan = database.get_execution_plan("")
+                    continue
+
+                if self.config.plans_only:
+                    original_query.execution_time_ms = \
+                        original_query.execution_plan.get_estimated_cost()
+                elif not calculate_avg_execution_time(
+                        cur,
+                        optimization,
+                        self.sut_database,
+                        query_str=query_str,
+                        num_retries=int(self.config.num_retries),
+                        connection=connection):
+                    timed_out += 1
 
             # get new minimum execution time
             if optimization.execution_time_ms != 0 and \
