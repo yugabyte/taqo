@@ -85,7 +85,7 @@ class Scenario:
                     self.logger.info(
                         f"Evaluating query {short_query}... [{counter}/{len(queries)}]")
 
-                    self.define_min_execution_time(conn, cur, original_query)
+                    self.sut_database.set_query_timeout(cur, self.config.test_query_timeout)
 
                     try:
                         self.sut_database.prepare_query_execution(cur)
