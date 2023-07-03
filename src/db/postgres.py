@@ -188,8 +188,8 @@ class Leading:
                     if field.is_index:
                         indexes += field.indexes
 
-                tables_and_idxs += {f"{Scans.INDEX.value}({index})" for index in indexes}
-                tables_and_idxs += {f"{Scans.INDEX_ONLY.value}({index})" for index in indexes}
+                tables_and_idxs += {f"{Scans.INDEX.value}({table.alias} {index})" for index in indexes}
+                tables_and_idxs += {f"{Scans.INDEX_ONLY.value}({table.alias} {index})" for index in indexes}
             else:
                 tables_and_idxs += {f"{Scans.INDEX.value}({table.alias})"
                                     for field in table.fields if field.is_index}
@@ -240,8 +240,8 @@ class Leading:
                     if field.is_index:
                         indexes += field.indexes
 
-                tables_and_idxs += [f"{Scans.INDEX.value}({index})" for index in indexes]
-                tables_and_idxs += [f"{Scans.INDEX_ONLY.value}({index})" for index in indexes]
+                tables_and_idxs += [f"{Scans.INDEX.value}({table.alias} {index})" for index in indexes]
+                tables_and_idxs += [f"{Scans.INDEX_ONLY.value}({table.alias} {index})" for index in indexes]
             else:
                 tables_and_idxs += [f"{Scans.INDEX.value}({table.alias})"
                                     for field in table.fields if field.is_index]
@@ -276,8 +276,7 @@ class PostgresQuery(Query):
         clean_plan = self.execution_plan.get_clean_plan()
 
         return not any(
-            join.value[0] in optimization.explain_hints and join.value[1] not in clean_plan
-            for join in Joins)
+            join.value[0] in optimization.explain_hints and join.value[1] not in clean_plan for join in Joins)
 
     def compare_plans(self, execution_plan: Type['ExecutionPlan']):
         if self.execution_plan:
@@ -307,10 +306,8 @@ class PostgresQuery(Query):
                     for plan_line in plan_heatmap.values():
                         for optimization_line in no_cost_plan.split("->"):
                             if SequenceMatcher(
-                                    a=optimization.execution_plan.get_no_tree_plan_str(
-                                        plan_line['str']),
-                                    b=optimization.execution_plan.get_no_tree_plan_str(
-                                        optimization_line)
+                                    a=optimization.execution_plan.get_no_tree_plan_str(plan_line['str']),
+                                    b=optimization.execution_plan.get_no_tree_plan_str(optimization_line)
                             ).ratio() > 0.9:
                                 plan_line['weight'] += 1
 
