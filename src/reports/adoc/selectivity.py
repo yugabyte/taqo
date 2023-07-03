@@ -1,6 +1,7 @@
 from sql_formatter.core import format_sql
 
-from objects import CollectResult, Query
+from collect_objects import CollectResult
+from db_objects import Query
 from reports.abstract import Report
 from utils import allowed_diff
 

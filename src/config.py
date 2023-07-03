@@ -84,6 +84,7 @@ class Config(metaclass=Singleton):
 
     test: str = None
     model: str = None
+    baseline_results: bool = None
     model_config: ModelConfig = None
     basic_multiplier: int = None
 

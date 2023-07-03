@@ -8,9 +8,9 @@ from typing import List, Type
 import psycopg2
 from allpairspy import AllPairs
 
+from collect_objects import CollectResult, ResultsLoader
 from config import Config, ConnectionConfig, DDLStep
-from objects import Query, ExecutionPlan, ListOfOptimizations, Table, Optimization, \
-    CollectResult, ResultsLoader, PlanNode, ScanNode
+from db_objects import Query, ExecutionPlan, ListOfOptimizations, Table, Optimization, PlanNode, ScanNode
 from db.database import Database
 from utils import evaluate_sql, allowed_diff
 
@@ -323,7 +323,7 @@ class PostgresQuery(Query):
         if best_optimization.optimizations:
             if best_optimization.execution_time_ms < 0:
                 best_optimization = best_optimization.optimizations[0]
-            for optimization in best_optimization.optimizations:
+            for optimization in self.optimizations:
                 if 0 < optimization.execution_time_ms < best_optimization.execution_time_ms:
                     best_optimization = optimization
 

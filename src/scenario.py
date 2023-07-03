@@ -81,11 +81,11 @@ class Scenario:
         for original_query in queries:
             with conn.cursor() as cur:
                 try:
-                    self.sut_database.set_query_timeout(cur, self.config.test_query_timeout)
-
                     short_query = original_query.query.replace('\n', '')[:40]
                     self.logger.info(
                         f"Evaluating query {short_query}... [{counter}/{len(queries)}]")
+
+                    self.define_min_execution_time(conn, cur, original_query)
 
                     try:
                         self.sut_database.prepare_query_execution(cur)
@@ -110,6 +110,8 @@ class Scenario:
                             original_query.execution_plan = self.config.database.get_execution_plan(
                                 '')
                             conn.rollback()
+
+                    self.define_min_execution_time(conn, cur, original_query)
 
                     if self.config.plans_only:
                         original_query.execution_time_ms = \
@@ -136,6 +138,27 @@ class Scenario:
 
             conn.rollback()
 
+    def define_min_execution_time(self, conn, cur, original_query):
+        if self.config.baseline_results:
+            if baseline_result := \
+                    self.config.baseline_results.find_query_by_hash(original_query.query_hash):
+                # get best optimization from baseline run
+                best_optimization = baseline_result.get_best_optimization(self.config)
+                query_str = best_optimization.get_explain_analyze() if self.config.server_side_execution else None
+                calculate_avg_execution_time(cur,
+                                             best_optimization,
+                                             self.sut_database,
+                                             query_str=query_str,
+                                             num_retries=int(self.config.num_retries),
+                                             connection=conn)
+                self.set_query_timeout_based_on_previous_execution(cur,
+                                                                   best_optimization.execution_time_ms,
+                                                                   original_query)
+            else:
+                self.sut_database.set_query_timeout(cur, self.config.test_query_timeout)
+        else:
+            self.sut_database.set_query_timeout(cur, self.config.test_query_timeout)
+
     def evaluate_optimizations(self, connection, cur, original_query):
         # build all possible optimizations
         database = self.config.database
@@ -158,11 +181,7 @@ class Scenario:
             # set maximum execution time if this is first query,
             # or we are evaluating queries near best execution time
             if self.config.look_near_best_plan or len(original_query.optimizations) == 1:
-                optimizer_query_timeout = \
-                    (original_query.optimizer_tips and original_query.optimizer_tips.max_timeout) or \
-                    f"{int(min_execution_time / 1000) + int(self.config.skip_timeout_delta)}"
-
-                self.sut_database.set_query_timeout(cur, optimizer_query_timeout)
+                self.set_query_timeout_based_on_previous_execution(cur, min_execution_time, original_query)
 
             self.try_to_get_default_explain_hints(cur, optimization, original_query)
 
@@ -208,9 +227,15 @@ class Scenario:
                 min_execution_time = optimization.execution_time_ms
 
             progress_bar.set_postfix(
-                {'dp': duplicates, 'to': timed_out, 'min_time_ms': min_execution_time})
+                {'skipped': f"(dp: {duplicates}, to: {timed_out})", 'min_time_ms': "{:.2f}".format(min_execution_time)})
 
         return list_of_optimizations
+
+    def set_query_timeout_based_on_previous_execution(self, cur, min_execution_time, original_query):
+        optimizer_query_timeout = \
+            (original_query.optimizer_tips and original_query.optimizer_tips.max_timeout) or \
+            f"{int(min_execution_time / 1000) + int(self.config.skip_timeout_delta)}"
+        self.sut_database.set_query_timeout(cur, optimizer_query_timeout)
 
     def try_to_get_default_explain_hints(self, cur, optimization, original_query):
         if not original_query.explain_hints:

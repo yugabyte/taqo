@@ -49,6 +49,9 @@ if __name__ == "__main__":
                         default="yugabyte",
                         help='Database to run against')
 
+    parser.add_argument('--baseline',
+                        default="",
+                        help='Link to baseline run results (JSON)')
     parser.add_argument('--config',
                         default="config/default.conf",
                         help='Configuration file path')
@@ -239,6 +242,7 @@ if __name__ == "__main__":
             options_config[key] = value
 
     configuration = configuration | options_config
+    loader = PostgresResultsLoader()
 
     config = Config(
         logger=init_logger("DEBUG" if args.verbose else "INFO"),
@@ -261,6 +265,7 @@ if __name__ == "__main__":
 
         model=model,
         model_config=model_config,
+        baseline_results=loader.get_queries_from_previous_result(args.baseline) if args.baseline else None,
         output=args.output,
         ddls=ddls,
         remote_data_path=args.remote_data_path,
@@ -297,8 +302,6 @@ if __name__ == "__main__":
 
     config.logger.info("------------------------------------------------------------")
     config.logger.info("Query Optimizer Testing Framework for Postgres compatible DBs")
-
-    loader = PostgresResultsLoader()
 
     if args.action == "collect":
         config.logger.info("")
