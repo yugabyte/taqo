@@ -80,6 +80,7 @@ class Config(metaclass=Singleton):
 
     test: str = None
     model: str = None
+    baseline_path: str = None
     baseline_results: bool = None
     all_index_check: bool = None
     load_catalog_tables: bool = None

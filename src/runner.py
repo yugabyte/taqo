@@ -267,6 +267,7 @@ if __name__ == "__main__":
         model=model,
         all_index_check=configuration.get("all-index-check", True),
         load_catalog_tables=configuration.get("load-catalog-tables", False),
+        baseline_path=args.baseline,
         baseline_results=loader.get_queries_from_previous_result(args.baseline) if args.baseline else None,
         output=args.output,
         ddls=ddls,
