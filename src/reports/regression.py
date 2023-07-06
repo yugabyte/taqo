@@ -45,11 +45,8 @@ class RegressionReport(Report):
 
         report.report_model(loq_v1.model_queries)
 
-        for query in zip(loq_v1.queries, loq_v2.queries):
-            if query[0].query_hash != query[1].query_hash:
-                raise AttributeError("Query hashes are not mathing, check input files")
-
-            report.add_query(*query)
+        for query in loq_v1.queries:
+            report.add_query(query, loq_v2.find_query_by_hash(query.query_hash) if loq_v2 else None)
 
         report.build_report()
         report.build_xls_report()
@@ -64,7 +61,7 @@ class RegressionReport(Report):
         self.report += f"[GIT COMMIT/VERSION]\n====\n" \
                        f"First:\n{first_version}\n\nSecond:\n{second_version}\n====\n\n"
 
-    def add_query(self, first_query: Query, second_query: Query):
+    def add_query(self, first_query: Type[Query], second_query: Type[Query]):
         if first_query.tag not in self.queries:
             self.queries[first_query.tag] = [[first_query, second_query], ]
         else:
@@ -517,7 +514,7 @@ class RegressionReport(Report):
                 first_query: Query = query[0]
                 second_query: Query = query[1]
 
-                ratio = second_query.execution_time_ms / (first_query.execution_time_ms) \
+                ratio = first_query.execution_time_ms / (second_query.execution_time_ms) \
                     if first_query.execution_time_ms != 0 else 99999999
                 ratio_color = eq_bad_format if ratio > 1.0 else eq_format
 

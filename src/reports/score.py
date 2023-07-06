@@ -33,7 +33,7 @@ class ScoreReport(Report):
 
         report.report_model(loq.model_queries)
 
-        for qid, query in enumerate(loq.queries):
+        for query in loq.queries:
             report.add_query(query, pg_loq.find_query_by_hash(query.query_hash) if pg_loq else None)
 
         report.build_report()

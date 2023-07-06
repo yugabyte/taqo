@@ -97,6 +97,12 @@ class Query:
     def get_best_optimization(self, config):
         pass
 
+    def __eq__(self, other):
+        return self.query_hash == other.query_hash
+
+    def __hash__(self):
+        return hash(self.query_hash)
+
 
 @dataclasses.dataclass
 class Optimization(Query):

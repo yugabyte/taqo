@@ -6,10 +6,10 @@ from pyhocon import ConfigFactory
 from config import Config, init_logger, ConnectionConfig, DDLStep
 from db.factory import create_database
 from db.postgres import DEFAULT_USERNAME, DEFAULT_PASSWORD, PostgresResultsLoader
-from reports.adoc.regression import RegressionReport
-from reports.adoc.score import ScoreReport
-from reports.adoc.selectivity import SelectivityReport
-from reports.adoc.taqo import TaqoReport
+from reports.regression import RegressionReport
+from reports.score import ScoreReport
+from reports.selectivity import SelectivityReport
+from reports.taqo import TaqoReport
 
 from scenario import Scenario
 from utils import get_bool_from_object, get_model_path

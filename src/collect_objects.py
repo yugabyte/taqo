@@ -1,12 +1,14 @@
 import dataclasses
 import json
 import os
+import bisect
 from typing import List, Type
 
 from dacite import Config as DaciteConfig
 from dacite import from_dict
 
 from db_objects import Query
+
 
 @dataclasses.dataclass
 class CollectResult:
@@ -37,6 +39,7 @@ class EnhancedJSONEncoder(json.JSONEncoder):
             return dataclasses.asdict(o)
         return super().default(o)
 
+
 class ResultsLoader:
 
     def __init__(self):
@@ -52,4 +55,3 @@ class ResultsLoader:
 
         with open(f"report/{output_json_name}.json", "w") as result_file:
             result_file.write(json.dumps(queries, cls=EnhancedJSONEncoder))
-

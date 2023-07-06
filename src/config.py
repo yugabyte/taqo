@@ -1,9 +1,9 @@
 import dataclasses
 import logging
 import sys
+import pprint
 from copy import copy
 from enum import Enum
-from pprint import pprint
 from typing import List, Set
 
 from db.database import Database
@@ -113,5 +113,6 @@ class Config(metaclass=Singleton):
             self_dict.pop(field)
 
         self_dict['connection'] = str(self_dict['connection'])
+        self_dict['ddls'] = str([m.name for m in self.ddls])
 
-        return str(pprint(self_dict))
+        return str(pprint.pformat(self_dict))
