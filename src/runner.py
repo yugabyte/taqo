@@ -3,7 +3,7 @@ from os.path import exists
 
 from pyhocon import ConfigFactory
 
-from config import Config, init_logger, ConnectionConfig, DDLStep, ModelConfig
+from config import Config, init_logger, ConnectionConfig, DDLStep
 from db.factory import create_database
 from db.postgres import DEFAULT_USERNAME, DEFAULT_PASSWORD, PostgresResultsLoader
 from reports.adoc.regression import RegressionReport
@@ -33,6 +33,17 @@ def parse_ddls(ddl_ops):
         result.add(DDLStep.ANALYZE)
 
     return result
+
+
+def parse_model_config(model):
+    path_to_file = f"{get_model_path(model)}/model.conf"
+
+    if exists(path_to_file):
+        parsed_model_config = ConfigFactory.parse_file(path_to_file)
+        global_option = get_bool_from_object(configuration.get("all-index-check", True))
+
+        configuration['all-index-check'] = global_option and parsed_model_config.get("all-index-check", True)
+        configuration['load-catalog-tables'] = parsed_model_config.get("load-catalog-tables", False)
 
 
 if __name__ == "__main__":
@@ -213,19 +224,9 @@ if __name__ == "__main__":
 
     configuration = ConfigFactory.parse_file(args.config)
     ddls = parse_ddls(args.ddls)
-
     model = args.model
-    path_to_file = f"{get_model_path(model)}/model.conf"
-    parse_catalog_clause = ""
-    parse_catalog = False
 
-    model_config = ModelConfig()
-    if exists(path_to_file):
-        parsed_model_config = ConfigFactory.parse_file(path_to_file)
-        global_option = get_bool_from_object(configuration.get("all-index-check", True))
-
-        model_config.all_index_check = global_option and parsed_model_config.get("all-index-check", True)
-        model_config.parse_catalog = parsed_model_config.get("parse-catalog", False)
+    parse_model_config(model)
 
     options_config = {}
     if args.options:
@@ -264,7 +265,8 @@ if __name__ == "__main__":
                                     database=args.database),
 
         model=model,
-        model_config=model_config,
+        all_index_check=configuration.get("all-index-check", True),
+        load_catalog_tables=configuration.get("load-catalog-tables", False),
         baseline_results=loader.get_queries_from_previous_result(args.baseline) if args.baseline else None,
         output=args.output,
         ddls=ddls,
@@ -307,8 +309,7 @@ if __name__ == "__main__":
         config.logger.info("")
         config.logger.info(f"Collecting results for model: {config.model}")
         config.logger.info("Configuration:")
-        for line in str(config).split("\n"):
-            config.logger.info(line)
+        config.logger.info(str(config))
         config.logger.info("------------------------------------------------------------")
 
         if args.output is None:

@@ -125,14 +125,14 @@ class SQLModel(QTFModel):
     def load_tables_from_public(self, cur):
         created_tables = []
 
-        parse_catalog_clause = " or table_schema = 'pg_catalog'" if self.config.model_config.parse_catalog else ""
+        load_catalog_clause = " or table_schema = 'pg_catalog'" if self.config.load_catalog_tables else ""
 
         self.logger.info("Loading tables...")
         cur.execute(
             f"""
             select table_name, table_schema 
             from information_schema.tables 
-            where table_schema = 'public' {parse_catalog_clause};
+            where table_schema = 'public' {load_catalog_clause};
             """)
         tables = []
         result = list(cur.fetchall())

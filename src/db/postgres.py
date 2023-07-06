@@ -182,7 +182,7 @@ class Leading:
         for table in self.tables:
             tables_and_idxs = [f"{Scans.SEQ.value}({table.alias})"]
 
-            if self.config.model_config.all_index_check:
+            if self.config.all_index_check:
                 indexes = []
                 for field in table.fields:
                     if field.is_index:
@@ -232,9 +232,11 @@ class Leading:
     def get_table_scan_hints(self):
         table_scan_hints = []
         for table in self.tables:
-            tables_and_idxs = [f"{Scans.SEQ.value}({table.alias})"]
+            tables_and_idxs = [f"{Scans.SEQ.value}({table.alias})",
+                               f"{Scans.INDEX.value}({table.alias})",
+                               f"{Scans.INDEX_ONLY.value}({table.alias})"]
 
-            if self.config.model_config.all_index_check:
+            if self.config.all_index_check:
                 indexes = []
                 for field in table.fields:
                     if field.is_index:
