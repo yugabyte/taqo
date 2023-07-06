@@ -180,7 +180,9 @@ class Leading:
                 self.joins.append(f"{self.LEADING} ( {prev_el} ) {join}")
 
         for table in self.tables:
-            tables_and_idxs = [f"{Scans.SEQ.value}({table.alias})"]
+            tables_and_idxs = [f"{Scans.SEQ.value}({table.alias})",
+                               f"{Scans.INDEX.value}({table.alias})",
+                               f"{Scans.INDEX_ONLY.value}({table.alias})"]
 
             if self.config.all_index_check:
                 indexes = []
