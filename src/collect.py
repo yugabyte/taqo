@@ -1,13 +1,12 @@
 import dataclasses
 import json
 import os
-import bisect
 from typing import List, Type
 
 from dacite import Config as DaciteConfig
 from dacite import from_dict
 
-from db_objects import Query
+from objects import Query
 
 
 @dataclasses.dataclass

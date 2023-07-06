@@ -8,9 +8,9 @@ from typing import List, Type
 import psycopg2
 from allpairspy import AllPairs
 
-from collect_objects import CollectResult, ResultsLoader
+from collect import CollectResult, ResultsLoader
 from config import Config, ConnectionConfig, DDLStep
-from db_objects import Query, ExecutionPlan, ListOfOptimizations, Table, Optimization, PlanNode, ScanNode
+from objects import Query, ExecutionPlan, ListOfOptimizations, Table, Optimization, PlanNode, ScanNode
 from db.database import Database
 from utils import evaluate_sql, allowed_diff
 

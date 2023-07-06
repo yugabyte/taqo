@@ -3,8 +3,8 @@ from typing import Type
 from matplotlib import pyplot as plt
 from sql_formatter.core import format_sql
 
-from collect_objects import CollectResult
-from db_objects import Query
+from collect import CollectResult
+from objects import Query
 from reports.abstract import Report
 from utils import allowed_diff
 

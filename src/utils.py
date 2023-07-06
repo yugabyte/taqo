@@ -10,7 +10,7 @@ import psycopg2
 
 from config import Config
 from db.database import Database
-from db_objects import Query, FieldInTableHelper
+from objects import Query, FieldInTableHelper
 
 PARAMETER_VARIABLE = r"[^'](\%\((.*?)\))"
 WITH_ORDINALITY = r"[Ww][Ii][Tt][Hh]\s*[Oo][Rr][Dd][Ii][Nn][Aa][Ll][Ii][Tt][yY]\s*[Aa][Ss]\s*.*(.*)"
@@ -170,6 +170,7 @@ def get_tables(object, tables_in_sut):
 
     return _parse_tables(set(), object, tables_in_sut)
 
+
 def get_fields(object, tables_in_query):
     def _parse_fields(fields, object, tables):
         if isinstance(object, list):
@@ -208,6 +209,7 @@ def get_fields(object, tables_in_query):
             fields_in_query.add(field_in_query)
 
     return fields_in_query
+
 
 def get_alias_table_names(sql_str, tables_in_sut):
     # 'WITH ORDINALITY' clauses get misinterpreted as
@@ -327,6 +329,7 @@ def get_md5(string: str):
 
 def get_bool_from_object(string: str | bool | int):
     return string in {True, 1, "True", "true", "TRUE", "T"}
+
 
 def get_model_path(model):
     if model.startswith("/") or model.startswith("."):

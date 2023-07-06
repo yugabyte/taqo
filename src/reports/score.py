@@ -5,9 +5,9 @@ from matplotlib import pyplot as plt
 from matplotlib import rcParams
 from sql_formatter.core import format_sql
 
-from collect_objects import CollectResult
+from collect import CollectResult
 from db.postgres import PostgresQuery
-from db_objects import Query
+from objects import Query
 from reports.abstract import Report
 from utils import allowed_diff
 

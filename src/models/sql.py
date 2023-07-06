@@ -10,7 +10,7 @@ from sqlparse.sql import Comment
 from tqdm import tqdm
 
 from config import DDLStep
-from db_objects import QueryTips, Field
+from objects import QueryTips, Field
 from db.postgres import PostgresQuery, Table
 from models.abstract import QTFModel
 from utils import get_alias_table_names, evaluate_sql, get_md5, get_model_path
