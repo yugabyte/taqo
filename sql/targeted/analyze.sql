@@ -1,13 +1,1 @@
--- ANALYZE t_range_pk_100k;
--- ANALYZE t_hash_pk_100k;
--- ANALYZE t_range_wide_pk_100k;
--- ANALYZE t_hash_wide_pk_100k;
--- ANALYZE t_range_pk_50k;
--- ANALYZE t_hash_pk_50k;
--- ANALYZE t_range_pk_20k;
--- ANALYZE t_hash_pk_20k;
--- ANALYZE t_range_pk_10k;
--- ANALYZE t_hash_pk_10k;
--- ANALYZE t_range_pk_1k;
--- ANALYZE t_hash_pk_1k;
 ANALYZE t_composite_pk_10k;
