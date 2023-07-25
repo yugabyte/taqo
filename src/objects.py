@@ -66,6 +66,7 @@ class Query:
     optimizer_tips: QueryTips = dataclasses.field(default_factory=QueryTips)
     explain_hints: str = ""
 
+    basic_execution_plan: 'ExecutionPlan' = None
     execution_plan: 'ExecutionPlan' = None
     execution_time_ms: float = 0
     result_cardinality: int = 0

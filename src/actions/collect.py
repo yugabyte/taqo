@@ -3,13 +3,15 @@ import subprocess
 import psycopg2
 from tqdm import tqdm
 
+from actions.collects.pg_unit import PgUnitGenerator
+from config import Config
 from models.factory import get_test_model
 from utils import evaluate_sql, calculate_avg_execution_time, get_md5
 
 
-class Scenario:
-    def __init__(self, config):
-        self.config = config
+class CollectAction:
+    def __init__(self):
+        self.config = Config()
         self.logger = self.config.logger
         self.sut_database = self.config.database
 
@@ -65,7 +67,14 @@ class Scenario:
                                     evaluate_optimizations=False):
         try:
             model = get_test_model()
-            created_tables, model_queries = model.create_tables(connection)
+
+            created_tables, \
+                teardown_queries, \
+                create_queries, \
+                analyze_queries, \
+                import_queries = model.create_tables(connection)
+
+            model_queries = teardown_queries + create_queries + analyze_queries + import_queries
             queries = model.get_queries(created_tables)
         except Exception as e:
             self.logger.exception("Failed to evaluate DDL queries", e)
@@ -73,6 +82,10 @@ class Scenario:
 
         connection.autocommit = False
         self.evaluate_testing_queries(connection, queries, evaluate_optimizations)
+
+        PgUnitGenerator().generate_postgres_unit_tests(teardown_queries,
+                                                       create_queries,
+                                                       queries)
 
         return model_queries, queries
 
@@ -86,8 +99,13 @@ class Scenario:
                         f"Evaluating query {short_query}... [{counter}/{len(queries)}]")
 
                     self.sut_database.set_query_timeout(cur, self.config.test_query_timeout)
-
                     try:
+                        self.sut_database.prepare_query_execution(cur)
+                        evaluate_sql(cur, original_query.get_heuristic_explain())
+                        original_query.basic_execution_plan = self.config.database.get_execution_plan(
+                            '\n'.join(
+                                str(item[0]) for item in cur.fetchall()))
+
                         self.sut_database.prepare_query_execution(cur)
                         evaluate_sql(cur, original_query.get_explain())
                         original_query.execution_plan = self.config.database.get_execution_plan(
@@ -187,10 +205,10 @@ class Scenario:
 
             # check that execution plan is unique
             evaluate_sql(cur, optimization.get_heuristic_explain())
-            execution_plan = database.get_execution_plan(
+            optimization.basic_execution_plan = database.get_execution_plan(
                 '\n'.join(str(item[0]) for item in cur.fetchall())
             )
-            exec_plan_md5 = get_md5(execution_plan.get_clean_plan())
+            exec_plan_md5 = get_md5(optimization.basic_execution_plan.get_clean_plan())
             not_unique_plan = exec_plan_md5 in execution_plans_checked
             execution_plans_checked.add(exec_plan_md5)
             query_str = optimization.get_explain_analyze() if self.config.server_side_execution else None

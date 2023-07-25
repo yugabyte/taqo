@@ -6,12 +6,13 @@ from pyhocon import ConfigFactory
 from config import Config, init_logger, ConnectionConfig, DDLStep
 from db.factory import create_database
 from db.postgres import DEFAULT_USERNAME, DEFAULT_PASSWORD, PostgresResultsLoader
-from reports.regression import RegressionReport
-from reports.score import ScoreReport
-from reports.selectivity import SelectivityReport
-from reports.taqo import TaqoReport
 
-from scenario import Scenario
+from actions.reports.regression import RegressionReport
+from actions.reports.score import ScoreReport
+from actions.reports.selectivity import SelectivityReport
+from actions.reports.taqo import TaqoReport
+from actions.collect import CollectAction
+
 from utils import get_bool_from_object, get_model_path
 
 
@@ -321,8 +322,7 @@ if __name__ == "__main__":
             input("Validate configuration carefully and press Enter...")
 
         config.logger.info("Evaluating scenario")
-        sc = Scenario(config)
-        sc.evaluate()
+        CollectAction().evaluate()
     elif args.action == "report":
         config.logger.info("")
         config.logger.info(f"Generation {args.type} report")
