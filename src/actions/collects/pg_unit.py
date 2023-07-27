@@ -64,7 +64,7 @@ class PgUnitGenerator:
 
             previous_tag = None
             for query in queries:
-                _,_, clean_query = parse_clear_and_parametrized_sql(query.get_heuristic_explain())
+                _,_, clean_query = parse_clear_and_parametrized_sql(query.get_costs_off_explain())
                 if previous_tag != query.tag:
                     result_file.write("\n")
                     previous_tag = query.tag
@@ -108,9 +108,9 @@ class PgUnitGenerator:
             result_file.write("\n")
 
             for query in queries:
-                _,_, clean_query = parse_clear_and_parametrized_sql(query.get_heuristic_explain())
+                _,_, clean_query = parse_clear_and_parametrized_sql(query.get_costs_off_explain())
                 result_file.write(cleandoc(self.add_semicolon(clean_query)))
-                result_file.write(self.wrap_query_plan(query.basic_execution_plan.full_str))
+                result_file.write(self.wrap_query_plan(query.cost_off_explain.full_str))
 
             result_file.write("\n")
 

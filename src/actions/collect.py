@@ -101,8 +101,8 @@ class CollectAction:
                     self.sut_database.set_query_timeout(cur, self.config.test_query_timeout)
                     try:
                         self.sut_database.prepare_query_execution(cur)
-                        evaluate_sql(cur, original_query.get_heuristic_explain())
-                        original_query.basic_execution_plan = self.config.database.get_execution_plan(
+                        evaluate_sql(cur, original_query.get_costs_off_explain())
+                        original_query.cost_off_explain = self.config.database.get_execution_plan(
                             '\n'.join(
                                 str(item[0]) for item in cur.fetchall()))
 

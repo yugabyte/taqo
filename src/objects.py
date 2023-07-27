@@ -87,6 +87,9 @@ class Query:
     def get_heuristic_explain(self):
         return f"EXPLAIN {self.query}"
 
+    def get_costs_off_explain(self):
+        return f"EXPLAIN (costs off) {self.query}"
+
     def get_explain_analyze(self):
         return f"EXPLAIN ANALYZE {self.query}"
 
