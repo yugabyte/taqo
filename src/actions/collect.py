@@ -160,7 +160,7 @@ class CollectAction:
         if self.config.baseline_results:
             if baseline_result := \
                     self.config.baseline_results.find_query_by_hash(original_query.query_hash):
-                # get best optimization from baseline run
+                # get the best optimization from baseline run
                 best_optimization = baseline_result.get_best_optimization(self.config)
                 query_str = best_optimization.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
                     if self.config.server_side_execution else None

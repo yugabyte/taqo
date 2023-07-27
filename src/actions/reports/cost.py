@@ -404,7 +404,6 @@ class CostReport(AbstractReportAction):
 
 
     def build_xls_report(self):
-        import xlsxwriter
         pass
 
     def add_to_table_row_map(self, tables):
@@ -482,9 +481,9 @@ class CostReport(AbstractReportAction):
             if m := re.search('\$(?P<first>\d+)[ ,\$0-9]+..., \$(?P<last>\d+)', expr[start:end]):
                 first = int(m.group('first'))
                 last = int(m.group('last'))
-                return (last - first + 2, True)
-            return (len(expr[start:end].split(',')), False)
-        return (0, False)
+                return last - first + 2, True
+            return len(expr[start:end].split(',')), False
+        return 0, False
 
     def has_simple_index_cond(self, node, index_cond_only=False):
         return ((index_cond := str(node.get_index_cond()))
@@ -496,7 +495,7 @@ class CostReport(AbstractReportAction):
         return ((index_cond := str(node.get_index_cond()))
                 and (eq_any_start := index_cond.find('= ANY (')) > 0
                 and (eq_any_end := index_cond.find(')', eq_any_start)) > 0
-                and (parameterized == None
+                and (parameterized is None
                      or parameterized == (index_cond.find('$', eq_any_start, eq_any_end) > 0)))
 
     def get_node_table_rows(self, node):
