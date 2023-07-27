@@ -10,7 +10,7 @@ from allpairspy import AllPairs
 
 from collect import CollectResult, ResultsLoader
 from config import Config, ConnectionConfig, DDLStep
-from objects import Query, ExecutionPlan, ListOfOptimizations, Table, Optimization, PlanNode, ScanNode
+from objects import Query, ExecutionPlan, ListOfOptimizations, Table, Optimization, PlanNode, ScanNode, ExplainFlags
 from db.database import Database
 from utils import evaluate_sql, allowed_diff, parse_clear_and_parametrized_sql
 
@@ -272,15 +272,6 @@ class PostgresQuery(Query):
     def get_query(self):
         return f"{self.get_debug_hints()}{self.query}"
 
-    def get_explain(self):
-        return f"{Config().explain_clause} {self.get_query()}"
-
-    def get_heuristic_explain(self):
-        return f"EXPLAIN {self.get_query()}"
-
-    def get_explain_analyze(self):
-        return f"EXPLAIN ANALYZE {self.get_query()}"
-
     def tips_looks_fair(self, optimization):
         clean_plan = self.execution_plan.get_clean_plan()
 
@@ -353,11 +344,13 @@ class PostgresOptimization(PostgresQuery, Optimization):
     def get_query(self):
         return self.get_default_tipped_query()
 
-    def get_explain(self):
-        return f"{Config().explain_clause} {self.get_default_tipped_query()}"
+    def get_explain(self, explain_clause: str = None, options: List[ExplainFlags] = None):
+        if not explain_clause:
+            explain_clause = Config.explain_clause
 
-    def get_heuristic_explain(self):
-        return f"EXPLAIN {self.get_default_tipped_query()}"
+        options_clause = f" ({', '.join([opt.value for opt in options])})" if options else ""
+
+        return f"{explain_clause}{options_clause} {self.get_default_tipped_query()}"
 
 
 @dataclasses.dataclass
@@ -437,7 +430,7 @@ class PostgresExecutionPlan(ExecutionPlan):
                         node.properties['Peak Memory Usage'] = match.group('peak_mem')
                     else:
                         if (keylen := prop_str.find(':')) > 0:
-                            node.properties[prop_str[:keylen]] = prop_str[keylen+1:].strip()
+                            node.properties[prop_str[:keylen]] = prop_str[keylen + 1:].strip()
 
             if not current_path:
                 current_path.append(node)

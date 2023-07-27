@@ -6,6 +6,7 @@ from tqdm import tqdm
 from actions.collects.pg_unit import PgUnitGenerator
 from config import Config
 from models.factory import get_test_model
+from objects import EXPLAIN, ExplainFlags
 from utils import evaluate_sql, calculate_avg_execution_time, get_md5
 
 
@@ -101,23 +102,21 @@ class CollectAction:
                     self.sut_database.set_query_timeout(cur, self.config.test_query_timeout)
                     try:
                         self.sut_database.prepare_query_execution(cur)
-                        evaluate_sql(cur, original_query.get_costs_off_explain())
+                        evaluate_sql(cur, original_query.get_explain(EXPLAIN, [ExplainFlags.COSTS_OFF]))
                         original_query.cost_off_explain = self.config.database.get_execution_plan(
-                            '\n'.join(
-                                str(item[0]) for item in cur.fetchall()))
+                            '\n'.join(str(item[0]) for item in cur.fetchall()))
 
                         self.sut_database.prepare_query_execution(cur)
-                        evaluate_sql(cur, original_query.get_explain())
+                        evaluate_sql(cur, original_query.get_explain(EXPLAIN))
                         original_query.execution_plan = self.config.database.get_execution_plan(
-                            '\n'.join(
-                                str(item[0]) for item in cur.fetchall()))
+                            '\n'.join(str(item[0]) for item in cur.fetchall()))
 
                         conn.rollback()
                     except psycopg2.errors.QueryCanceled:
                         try:
-                            # try to get at least heuristic plan
+                            # try to get at least basic plan
                             self.sut_database.prepare_query_execution(cur)
-                            evaluate_sql(cur, original_query.get_heuristic_explain())
+                            evaluate_sql(cur, original_query.get_explain(EXPLAIN))
                             original_query.execution_plan = self.config.database.get_execution_plan(
                                 '\n'.join(
                                     str(item[0]) for item in cur.fetchall()))
@@ -135,7 +134,8 @@ class CollectAction:
                         original_query.execution_time_ms = \
                             original_query.execution_plan.get_estimated_cost()
                     else:
-                        query_str = original_query.get_explain_analyze() if self.config.server_side_execution else None
+                        query_str = original_query.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
+                            if self.config.server_side_execution else None
                         calculate_avg_execution_time(cur, original_query, self.sut_database,
                                                      query_str=query_str,
                                                      num_retries=int(self.config.num_retries),
@@ -162,7 +162,8 @@ class CollectAction:
                     self.config.baseline_results.find_query_by_hash(original_query.query_hash):
                 # get best optimization from baseline run
                 best_optimization = baseline_result.get_best_optimization(self.config)
-                query_str = best_optimization.get_explain_analyze() if self.config.server_side_execution else None
+                query_str = best_optimization.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
+                    if self.config.server_side_execution else None
                 calculate_avg_execution_time(cur,
                                              best_optimization,
                                              self.sut_database,
@@ -204,21 +205,21 @@ class CollectAction:
             self.try_to_get_default_explain_hints(cur, optimization, original_query)
 
             # check that execution plan is unique
-            evaluate_sql(cur, optimization.get_heuristic_explain())
+            evaluate_sql(cur, optimization.get_explain(EXPLAIN))
             optimization.basic_execution_plan = database.get_execution_plan(
                 '\n'.join(str(item[0]) for item in cur.fetchall())
             )
             exec_plan_md5 = get_md5(optimization.basic_execution_plan.get_clean_plan())
             not_unique_plan = exec_plan_md5 in execution_plans_checked
             execution_plans_checked.add(exec_plan_md5)
-            query_str = optimization.get_explain_analyze() if self.config.server_side_execution else None
+            query_str = optimization.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) if self.config.server_side_execution else None
 
             if not_unique_plan:
                 duplicates += 1
             else:
                 try:
                     self.sut_database.prepare_query_execution(cur)
-                    evaluate_sql(cur, optimization.get_explain())
+                    evaluate_sql(cur, optimization.get_explain(EXPLAIN))
                     optimization.execution_plan = database.get_execution_plan(
                         '\n'.join(str(item[0]) for item in cur.fetchall())
                     )
@@ -264,7 +265,7 @@ class CollectAction:
     def try_to_get_default_explain_hints(self, cur, optimization, original_query):
         if not original_query.explain_hints:
             if self.config.enable_statistics or optimization.execution_plan is None:
-                evaluate_sql(cur, optimization.get_heuristic_explain())
+                evaluate_sql(cur, optimization.get_explain(EXPLAIN))
 
                 execution_plan = self.config.database.get_execution_plan('\n'.join(
                     str(item[0]) for item in cur.fetchall()))

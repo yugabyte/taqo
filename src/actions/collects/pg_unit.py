@@ -2,6 +2,7 @@ from inspect import cleandoc
 
 from config import Config
 from db.yugabyte import ENABLE_STATISTICS_HINT
+from objects import ExplainFlags, EXPLAIN
 from utils import parse_clear_and_parametrized_sql
 
 
@@ -73,7 +74,7 @@ class PgUnitGenerator:
             best_found = ", !BETTER_PLAN_FOUND" if not query.compare_plans(query.get_best_optimization(self.config).execution_plan) else ""
 
             result_file.write(f"-- Query Hash: {query.query_hash} {best_found}\n")
-            _, _, clean_query = parse_clear_and_parametrized_sql(query.get_costs_off_explain())
+            _, _, clean_query = parse_clear_and_parametrized_sql(query.get_explain(EXPLAIN, options=[ExplainFlags.COSTS_OFF]))
             result_file.write(cleandoc(self.add_semicolon(clean_query)))
 
             result_file.write("\n")
