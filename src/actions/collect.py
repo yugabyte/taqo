@@ -97,7 +97,7 @@ class CollectAction:
                 try:
                     short_query = original_query.query.replace('\n', '')[:40]
                     self.logger.info(
-                        f"Evaluating query {short_query}... [{counter}/{len(queries)}]")
+                        f"Evaluating query with hash {original_query.query_hash} [{counter}/{len(queries)}]")
 
                     self.sut_database.set_query_timeout(cur, self.config.test_query_timeout)
                     try:
@@ -205,11 +205,11 @@ class CollectAction:
             self.try_to_get_default_explain_hints(cur, optimization, original_query)
 
             # check that execution plan is unique
-            evaluate_sql(cur, optimization.get_explain(EXPLAIN))
-            optimization.basic_execution_plan = database.get_execution_plan(
+            evaluate_sql(cur, optimization.get_explain(EXPLAIN, options=[ExplainFlags.COSTS_OFF]))
+            optimization.cost_off_explain = database.get_execution_plan(
                 '\n'.join(str(item[0]) for item in cur.fetchall())
             )
-            exec_plan_md5 = get_md5(optimization.basic_execution_plan.get_clean_plan())
+            exec_plan_md5 = get_md5(optimization.cost_off_explain.get_clean_plan())
             not_unique_plan = exec_plan_md5 in execution_plans_checked
             execution_plans_checked.add(exec_plan_md5)
             query_str = optimization.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) if self.config.server_side_execution else None

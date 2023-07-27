@@ -348,7 +348,7 @@ class PostgresOptimization(PostgresQuery, Optimization):
 
     def get_explain(self, explain_clause: str = None, options: List[ExplainFlags] = None):
         if not explain_clause:
-            explain_clause = Config.explain_clause
+            explain_clause = Config().explain_clause
 
         options_clause = f" ({', '.join([opt.value for opt in options])})" if options else ""
 
@@ -435,6 +435,9 @@ class PostgresExecutionPlan(ExecutionPlan):
             prev_level = int((indent + 4) / 6)
 
             node_props = node_str[:node_end].splitlines()
+
+            if not node_props:
+                break
 
             if match := plan_node_header_pattern.search(node_props[0]):
                 node_name = match.group('name')

@@ -98,7 +98,7 @@ class Query:
 
     def get_explain(self, explain_clause: str = None, options: List[ExplainFlags] = None):
         if not explain_clause:
-            explain_clause = Config.explain_clause
+            explain_clause = Config().explain_clause
 
         options_clause = f" ({', '.join([opt.value for opt in options])})" if options else ""
 
