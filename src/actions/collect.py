@@ -107,7 +107,7 @@ class CollectAction:
                             '\n'.join(str(item[0]) for item in cur.fetchall()))
 
                         self.sut_database.prepare_query_execution(cur)
-                        evaluate_sql(cur, original_query.get_explain(EXPLAIN))
+                        evaluate_sql(cur, original_query.get_explain())
                         original_query.execution_plan = self.config.database.get_execution_plan(
                             '\n'.join(str(item[0]) for item in cur.fetchall()))
 
@@ -219,7 +219,7 @@ class CollectAction:
             else:
                 try:
                     self.sut_database.prepare_query_execution(cur)
-                    evaluate_sql(cur, optimization.get_explain(EXPLAIN))
+                    evaluate_sql(cur, optimization.get_explain())
                     optimization.execution_plan = database.get_execution_plan(
                         '\n'.join(str(item[0]) for item in cur.fetchall())
                     )
