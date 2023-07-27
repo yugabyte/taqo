@@ -6,12 +6,7 @@ from pyhocon import ConfigFactory
 from config import Config, init_logger, ConnectionConfig, DDLStep
 from db.factory import create_database
 from db.postgres import DEFAULT_USERNAME, DEFAULT_PASSWORD, PostgresResultsLoader
-from reports.cost import CostReport
-from reports.regression import RegressionReport
-from reports.score import ScoreReport
-from reports.selectivity import SelectivityReport
-from reports.taqo import TaqoReport
-
+from actions.reports.cost import CostReport
 from actions.reports.regression import RegressionReport
 from actions.reports.score import ScoreReport
 from actions.reports.selectivity import SelectivityReport
@@ -367,6 +362,5 @@ if __name__ == "__main__":
         elif args.type == "cost":
             yb_queries = loader.get_queries_from_previous_result(args.results)
             CostReport.generate_report(yb_queries)
-
         else:
             raise AttributeError(f"Unknown test type defined {config.test}")

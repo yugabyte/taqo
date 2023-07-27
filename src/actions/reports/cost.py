@@ -10,9 +10,8 @@ from matplotlib import pyplot as plt
 from matplotlib import rcParams
 
 from collect import CollectResult
-from db.postgres import PostgresQuery
-from objects import Query, PlanNode, ScanNode, PlanNodeVisitor, PlanPrinter
-from reports.abstract import Report
+from objects import Query, ScanNode, PlanNodeVisitor
+from actions.report import AbstractReportAction
 
 
 PlotSeriesData = namedtuple('PlotSeriesData', ['fmt', 'x', 'cost', 'time_ms'])
@@ -69,8 +68,8 @@ class PlanFeatures:
 
 class PlanNodeCollectorContext:
     def __init__(self, plan_features):
-        self.seq_scan_nodes: { str: list(ScanNode) } = {}
-        self.any_index_scan_nodes: { str: list(ScanNode) } = {}
+        self.seq_scan_nodes: {str: list[ScanNode]} = {}
+        self.any_index_scan_nodes: {str: list[ScanNode]} = {}
         self.pf = plan_features
 
     def __str__(self):
@@ -148,7 +147,7 @@ class PlanNodeCollector(PlanNodeVisitor):
             self.__exit()
 
 
-class CostReport(Report):
+class CostReport(AbstractReportAction):
     def __init__(self):
         super().__init__()
 
@@ -164,7 +163,7 @@ class CostReport(Report):
 
 
     def get_image_path(self, file_name):
-        return f'{self.report_location}/{self.image_folder}/{file_name}';
+        return f'{self.report_location}/{self.image_folder}/{file_name}'
 
     def add_image(self, file_name, title):
         self.report += f"a|image::{self.image_folder}/{file_name}[{title}]\n"
@@ -443,10 +442,11 @@ class CostReport(Report):
     def process_plans(self, plan, ctx):
         if not (ptree := plan.parse_plan()):
             self.logger.warn(f"=== Failed to parse plan ===\n{plan.full_str}\n===")
-        if ptree.has_valid_cost():
-            PlanNodeCollector(ctx, self.logger).visit(ptree)
         else:
-            self.logger.warn(f"=== Skipping plan with invalid costs ===\n{plan.full_str}\n===")
+            if ptree.has_valid_cost():
+                PlanNodeCollector(ctx, self.logger).visit(ptree)
+            else:
+                self.logger.warn(f"=== Skipping plan with invalid costs ===\n{plan.full_str}\n===")
 
     def nofilter_indexscan_query(self, query_str):
         (q, pf) = self.query_map.get(query_str)
