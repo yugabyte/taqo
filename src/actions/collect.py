@@ -197,81 +197,21 @@ class CollectAction:
 
         disabled_optimizations = {}
         for optimization in progress_bar:
-            # in case of enable statistics enabled
-            # we can get failure here and throw timeout
-            original_query.optimizations.append(optimization)
-
-            # set maximum execution time if this is first query,
-            # or we are evaluating queries near best execution time
-            if self.config.look_near_best_plan or len(original_query.optimizations) == 1:
-                self.set_query_timeout_based_on_previous_execution(cur, min_execution_time, original_query)
-
-            self.try_to_get_default_explain_hints(cur, optimization, original_query)
-
-            # check that execution plan is unique
-            evaluate_sql(cur, optimization.get_explain(EXPLAIN, options=[ExplainFlags.COSTS_OFF]))
-            optimization.cost_off_explain = database.get_execution_plan(
-                '\n'.join(str(item[0]) for item in cur.fetchall())
-            )
-            exec_plan_md5 = get_md5(optimization.cost_off_explain.get_clean_plan())
-            not_unique_plan = exec_plan_md5 in executed_execution_plans
-
-            query_str = optimization.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
-                if self.config.server_side_execution else None
-
-            if not_unique_plan:
-                duplicates += 1
-            else:
-                try:
-                    self.sut_database.prepare_query_execution(cur)
-                    optimization_sql = optimization.get_explain(EXPLAIN) \
-                        if self.config.plans_only else optimization.get_explain()
-                    evaluate_sql(cur, optimization_sql)
-                    optimization.execution_plan = database.get_execution_plan(
-                        '\n'.join(str(item[0]) for item in cur.fetchall())
-                    )
-
-                    connection.rollback()
-                except psycopg2.errors.QueryCanceled as e:
-                    # failed by timeout - it's ok just skip optimization
-                    self.logger.debug(f"Getting execution plan failed with {e}")
-
-                    timed_out += 1
-                    optimization.execution_time_ms = 0
-                    optimization.execution_plan = database.get_execution_plan("")
-                    continue
-
-                if optimization.execution_plan.get_estimated_cost() > PG_DISABLE_COST:
-                    disabled_optimizations[exec_plan_md5] = optimization
-                    continue
-
-                executed_execution_plans.add(exec_plan_md5)
-                if self.config.plans_only:
-                    original_query.execution_time_ms = \
-                        original_query.execution_plan.get_estimated_cost()
-                elif optimization.execution_plan.get_estimated_cost() < PG_DISABLE_COST and \
-                        not calculate_avg_execution_time(
-                        cur,
-                        optimization,
-                        self.sut_database,
-                        query_str=query_str,
-                        num_retries=int(self.config.num_retries),
-                        connection=connection):
-                    timed_out += 1
-
-                # get new minimum execution time
-            if optimization.execution_time_ms != 0 and \
-                    optimization.execution_time_ms < min_execution_time:
-                min_execution_time = optimization.execution_time_ms
-
-            progress_bar.set_postfix(
-                {'skipped': f"(dp: {duplicates}, to: {timed_out}, do: {len(disabled_optimizations)})",
-                 'min_time_ms': "{:.2f}".format(min_execution_time)})
+            self.collect_optimization_data(progress_bar, database, connection, cur, original_query,
+                                           optimization, executed_execution_plans, min_execution_time, duplicates,
+                                           timed_out, disabled_optimizations)
 
         if disabled_optimizations:
+            disabled_plans_to_check = []
             for execution_plan_md5 in disabled_optimizations.keys():
                 if execution_plan_md5 not in executed_execution_plans:
-                    self.logger.info("PROBLEM")
+                    disabled_plans_to_check.append(disabled_optimizations[execution_plan_md5])
+
+            for disabled_optimization in tqdm(disabled_optimizations):
+                self.collect_optimization_data(progress_bar, database, connection, cur, original_query,
+                                               disabled_optimizations[disabled_optimization], executed_execution_plans,
+                                               min_execution_time, duplicates, timed_out, {})
+
 
         return list_of_optimizations
 
@@ -282,7 +222,7 @@ class CollectAction:
                                   cur,
                                   original_query,
                                   optimization,
-                                  execution_plans_checked,
+                                  executed_execution_plans,
                                   min_execution_time,
                                   duplicates,
                                   timed_out,
@@ -305,26 +245,22 @@ class CollectAction:
             '\n'.join(str(item[0]) for item in cur.fetchall())
         )
         exec_plan_md5 = get_md5(optimization.cost_off_explain.get_clean_plan())
-        not_unique_plan = exec_plan_md5 in execution_plans_checked
+        not_unique_plan = exec_plan_md5 in executed_execution_plans
+
         query_str = optimization.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
             if self.config.server_side_execution else None
-        disabled_execution_plan = False
 
         if not_unique_plan:
             duplicates += 1
         else:
             try:
                 self.sut_database.prepare_query_execution(cur)
-                evaluate_sql(cur, optimization.get_explain())
+                optimization_sql = optimization.get_explain(EXPLAIN) \
+                    if self.config.plans_only else optimization.get_explain()
+                evaluate_sql(cur, optimization_sql)
                 optimization.execution_plan = database.get_execution_plan(
                     '\n'.join(str(item[0]) for item in cur.fetchall())
                 )
-
-                if optimization.execution_plan.get_estimated_cost() > PG_DISABLE_COST:
-                    disabled_optimizations[exec_plan_md5] = optimization
-                    disabled_execution_plan = True
-                else:
-                    execution_plans_checked.add(exec_plan_md5)
 
                 connection.rollback()
             except psycopg2.errors.QueryCanceled as e:
@@ -336,10 +272,15 @@ class CollectAction:
                 optimization.execution_plan = database.get_execution_plan("")
                 return
 
+            if optimization.execution_plan.get_estimated_cost() > PG_DISABLE_COST:
+                disabled_optimizations[exec_plan_md5] = optimization
+                return
+
+            executed_execution_plans.add(exec_plan_md5)
             if self.config.plans_only:
                 original_query.execution_time_ms = \
                     original_query.execution_plan.get_estimated_cost()
-            elif not disabled_execution_plan and \
+            elif optimization.execution_plan.get_estimated_cost() < PG_DISABLE_COST and \
                     not calculate_avg_execution_time(
                         cur,
                         optimization,
@@ -349,13 +290,13 @@ class CollectAction:
                         connection=connection):
                 timed_out += 1
 
-        # get new minimum execution time
+            # get new minimum execution time
         if optimization.execution_time_ms != 0 and \
                 optimization.execution_time_ms < min_execution_time:
             min_execution_time = optimization.execution_time_ms
 
         pb_collection.set_postfix(
-            {'skipped': f"(dp: {duplicates}, to: {timed_out}, ds: {len(disabled_optimizations)})",
+            {'skipped': f"(dp: {duplicates}, to: {timed_out}, do: {len(disabled_optimizations)})",
              'min_time_ms': "{:.2f}".format(min_execution_time)})
 
     def set_query_timeout_based_on_previous_execution(self, cur, min_execution_time, original_query):
