@@ -1,0 +1,39 @@
+CREATE TABLE t_range_100k (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE INDEX tr100kv1 ON t_range_100k (v1);
+
+CREATE TABLE t_range_200k (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE INDEX tr200kv1 ON t_range_200k (v1);
+
+CREATE TABLE t_range_300k (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE INDEX tr300kv1 ON t_range_300k (v1);
+
+CREATE TABLE t_range_400k (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE INDEX tr400kv1 ON t_range_400k (v1);
+
+CREATE TABLE t_range_500k (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE INDEX tr500kv1 ON t_range_500k (v1);
+
+CREATE TABLE t_range_600k (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE INDEX tr600kv1 ON t_range_600k (v1);
+
+CREATE TABLE t_range_700k (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE INDEX tr700kv1 ON t_range_700k (v1);
+
+CREATE TABLE t_range_800k (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE INDEX tr800kv1 ON t_range_800k (v1);
+
+CREATE TABLE t_range_900k (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE INDEX tr900kv1 ON t_range_900k (v1);
+
+CREATE TABLE t_range_1m (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE INDEX tr1mv1 ON t_range_1m (v1);
+
+CREATE TABLE t_range_100k_1update (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE TABLE t_range_100k_2update (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE TABLE t_range_100k_3update (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+CREATE TABLE t_range_100k_4update (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT, v4 INT);
+
+CREATE TABLE t_range_100k_1column (id INT PRIMARY KEY);
+CREATE TABLE t_range_100k_2column (id INT PRIMARY KEY, v1 INT);
+CREATE TABLE t_range_100k_3column (id INT PRIMARY KEY, v1 INT, v2 INT);
+CREATE TABLE t_range_100k_4column (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT);
