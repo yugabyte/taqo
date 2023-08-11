@@ -1,0 +1,9 @@
+select * from t_range_1m_4keys where k2 > 18;
+select * from t_range_1m_4keys where k2 > 16;
+select * from t_range_1m_4keys where k2 > 14;
+select * from t_range_1m_4keys where k2 > 12;
+select * from t_range_1m_4keys where k2 > 10;
+select * from t_range_1m_4keys where k2 > 8;
+select * from t_range_1m_4keys where k2 > 6;
+select * from t_range_1m_4keys where k2 > 4;
+select * from t_range_1m_4keys where k2 > 2;
