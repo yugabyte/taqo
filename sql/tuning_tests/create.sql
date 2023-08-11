@@ -72,5 +72,5 @@ INSERT INTO t_range_100k_3column (SELECT s, s, s FROM generate_series(1, 100000)
 CREATE TABLE t_range_100k_4column (id INT PRIMARY KEY, v1 INT, v2 INT, v3 INT);
 INSERT INTO t_range_100k_4column (SELECT s, s, s, s FROM generate_series(1, 100000) s);
 
-CREATE TABLE t_range_1m_4_keys (k1 INT, k2 INT, k3 INT, k4 INT, v1 INT, PRIMARY KEY (k1, k2, k3, k4));
-INSERT INTO t_range_1m_4_keys (SELECT s1, s2, s3, s4 FROM generate_series(1, 10) s1, generate_series(1, 20) s2, generate_series(1, 50) s3, generate_series(1, 100) s4);
+CREATE TABLE t_range_1m_4keys (k1 INT, k2 INT, k3 INT, k4 INT, v1 INT, PRIMARY KEY (k1, k2, k3, k4));
+INSERT INTO t_range_1m_4keys (SELECT s1, s2, s3, s4 FROM generate_series(1, 10) s1, generate_series(1, 20) s2, generate_series(1, 50) s3, generate_series(1, 100) s4);
