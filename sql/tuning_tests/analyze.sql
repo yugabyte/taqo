@@ -16,3 +16,4 @@ ANALYZE t_range_100k_1column;
 ANALYZE t_range_100k_2column;
 ANALYZE t_range_100k_3column;
 ANALYZE t_range_100k_4column;
+ANALYZE t_range_1m_4keys;
