@@ -217,8 +217,8 @@ class CollectAction:
                     continue
 
                 if self.config.plans_only:
-                    original_query.execution_time_ms = \
-                        default_execution_plan.get_estimated_cost()
+                    original_query.execution_plan = default_execution_plan
+                    original_query.execution_time_ms = default_execution_plan.get_estimated_cost()
                 elif not calculate_avg_execution_time(
                         cur,
                         optimization,
