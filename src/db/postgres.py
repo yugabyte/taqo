@@ -10,7 +10,8 @@ from allpairspy import AllPairs
 
 from collect import CollectResult, ResultsLoader
 from config import Config, ConnectionConfig, DDLStep
-from objects import Query, ExecutionPlan, ListOfOptimizations, Table, Optimization, PlanNode, ScanNode, ExplainFlags
+from objects import Query, ExecutionPlan, ListOfOptimizations, Table, Optimization, ExplainFlags
+from objects import AggregateNode, JoinNode, SortNode, PlanNode, ScanNode
 from db.abstract import PlanNodeAccessor
 from db.database import Database
 from utils import evaluate_sql, allowed_diff, parse_clear_and_parametrized_sql
@@ -358,8 +359,22 @@ class PostgresOptimization(PostgresQuery, Optimization):
 
 class PostgresPlanNodeAccessor(PlanNodeAccessor):
     @staticmethod
-    def has_valid_cost(self):
-        return float(self.total_cost) < PG_DISABLE_COST
+    def has_valid_cost(node):
+        return float(node.total_cost) < PG_DISABLE_COST
+
+    @staticmethod
+    def fixup_invalid_cost(node):
+        from sys import float_info
+        from math import log
+        scost = float(node.startup_cost)
+        tcost = float(node.total_cost)
+        if ((scost > 0 and log(scost, 10) >= float_info.mant_dig - 1)
+            or (tcost > 0 and log(tcost, 10) >= float_info.mant_dig - 1)):
+            return True
+
+        node.startup_cost = round(scost % PG_DISABLE_COST, 3)
+        node.total_cost = round(tcost % PG_DISABLE_COST, 3)
+        return False
 
     @staticmethod
     def is_seq_scan(node):
@@ -399,8 +414,9 @@ class PostgresPlanNodeAccessor(PlanNodeAccessor):
 
     @staticmethod
     def get_rows_removed_by_recheck(node, with_label=False):
-        return (node.get_property('Rows Removed by Index Recheck', with_label)
-                or node.get_property('Rows Removed by Recheck', with_label))
+        return int(node.get_property('Rows Removed by Index Recheck', with_label)
+                   or node.get_property('Rows Removed by Recheck', with_label)
+                   or 0)
 
 
 @dataclasses.dataclass
@@ -417,9 +433,21 @@ class PostgresExecutionPlan(ExecutionPlan):
             table_alias = match.group('alias')
         else:
             node_type = node_name
-        return (ScanNode(self.__node_accessor, node_type, table_name, table_alias,
-                         index_name, is_backward)
-                if table_name else PlanNode(self.__node_accessor, node_type))
+
+        if table_name:
+            return ScanNode(self.__node_accessor, node_type, table_name, table_alias,
+                            index_name, is_backward)
+
+        if 'Join' in node_type or 'Nested Loop' in node_type:
+            return JoinNode(self.__node_accessor, node_type)
+
+        if 'Aggregate' in node_type or 'Group' in node_type:
+            return AggregateNode(self.__node_accessor, node_type)
+
+        if 'Sort' in node_type:
+            return SortNode(self.__node_accessor, node_type)
+
+        return PlanNode(self.__node_accessor, node_type)
 
     def parse_plan(self):
         node = None
@@ -435,7 +463,8 @@ class PostgresExecutionPlan(ExecutionPlan):
             # it at each '->'.
             prev_level = int((indent + 4) / 6)
 
-            node_props = node_str[:node_end].splitlines()
+            node_props = (node_str[:node_end].splitlines() if node_str.endswith('\n')
+                          else node_str.splitlines())
 
             if not node_props:
                 break

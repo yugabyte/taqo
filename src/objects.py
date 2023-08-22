@@ -135,8 +135,8 @@ class PlanNode:
         self.node_type: str = node_type
         self.level: int = 0
         self.name: str = None
-        self.properties = {}
-        self.child_nodes: List[PlanNode] = []
+        self.properties: Mapping[str: str] = dict()
+        self.child_nodes: Iterable[PlanNode] = list()
 
         self.startup_cost: float = 0.0
         self.total_cost: float = 0.0
@@ -174,9 +174,13 @@ class PlanNode:
     def has_valid_cost(self):
         return self.acc.has_valid_cost(self)
 
+    # return False on success
+    def fixup_invalid_cost(self):
+        return self.acc.fixup_invalid_cost(self)
+
     def get_property(self, key, with_label=False):
-        value = self.properties.get(key)
-        return value if not with_label else f'{key}: {value}' if value else ''
+        value = self.properties.get(key, '')
+        return (f'{key}: {value}' if with_label else value) if value else ''
 
     def get_actual_row_adjusted_cost(self):
         return ((float(self.total_cost) - float(self.startup_cost))
@@ -236,6 +240,19 @@ class ScanNode(PlanNode):
                 and not self.get_local_filter()
                 and not self.get_rows_removed_by_recheck())
 
+
+class JoinNode(PlanNode):
+    pass
+
+
+class AggregateNode(PlanNode):
+    pass
+
+
+class SortNode(PlanNode):
+    pass
+
+
 class PlanNodeVisitor:
     pat = re.compile(r'([A-Z][a-z0-9]*)([A-Z])')
     def visit(self, node):
@@ -258,7 +275,7 @@ class PlanPrinter(PlanNodeVisitor):
         self.properties = properties
         self.level = level
 
-    def visit(self, node):
+    def generic_visit(self, node):
         self.plan_tree_str += f"{'':>{node.level*2}s}->  " if node.level else ''
         self.plan_tree_str += node.get_full_str(self.estimate, self.actual,
                                                 properties=False, level=self.level)
@@ -267,7 +284,7 @@ class PlanPrinter(PlanNodeVisitor):
                 f"\n{'':>{node.level*2}s}  {key}: {value}"
                 for key, value in node.properties.items()])
         self.plan_tree_str += '\n'
-        self.generic_visit(node)
+        super().generic_visit(node)
 
     @staticmethod
     def build_plan_tree_str(node, estimate=True, actual=True, properties=False, level=False):

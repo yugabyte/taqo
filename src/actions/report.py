@@ -83,11 +83,11 @@ class AbstractReportAction:
     def _end_source(self):
         self.report += "\n----\n"
 
-    def _start_collapsible(self, name):
-        self.report += f"""\n\n.{name}\n[%collapsible]\n====\n"""
+    def _start_collapsible(self, name, sep='===='):
+        self.report += f"""\n\n.{name}\n[%collapsible]\n{sep}\n"""
 
-    def _end_collapsible(self):
-        self.report += """\n====\n\n"""
+    def _end_collapsible(self, sep='===='):
+        self.report += f"""\n{sep}\n\n"""
 
     @staticmethod
     def _get_plan_diff(baseline, changed):
