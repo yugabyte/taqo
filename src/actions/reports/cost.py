@@ -29,9 +29,9 @@ REPORT_DESCRIPTION = (
 
 
 expr_classifier_pattern = re.compile(
-    '[ (]*((\w+\.)*(?P<column>c\d+)[ )]* *(?P<op>=|>=|<=|<>|<|>)'
-    ' *(?P<rhs>(?P<number>\d+)|(?:ANY \(\'{(?P<lit_array>[0-9,]+)}\'::integer\[\]\))'
-    '|(?:ANY \((?P<bnl_array>ARRAY\[[$0-9a-z_,. ]+\])\))))'
+    r'[ (]*((\w+\.)*(?P<column>c\d+)[ )]* *(?P<op>=|>=|<=|<>|<|>)'
+    r' *(?P<rhs>(?P<number>\d+)|(?:ANY \(\'{(?P<lit_array>[0-9,]+)}\'::integer\[\]\))'
+    r'|(?:ANY \((?P<bnl_array>ARRAY\[[$0-9a-z_,. ]+\])\))))'
 )
 
 
@@ -57,7 +57,7 @@ class ChartSpec:
     xlabel: str
     ylabel1: str
     ylabel2: str
-    query_filter: Callable[[str],bool]
+    query_filter: Callable[[str], bool]
     node_filter: Callable[[PlanNode], bool]
     x_getter: Callable
     series_label_suffix: Callable = lambda node: ''
@@ -77,6 +77,7 @@ class NodeFeatures:
     def __init__(self, node: PlanNode):
         self.is_seq_scan = False
         self.is_any_index_scan = False
+        self.is_join = False
         self.is_aggregate = False
         self.is_sort = False
         self.has_index_access_cond = False
@@ -93,6 +94,8 @@ class NodeFeatures:
             self.has_tfbr_filter = bool(node.get_remote_tfbr_filter())
             self.has_local_filter = bool(node.get_local_filter())
             self.has_rows_removed_by_recheck = bool(node.get_rows_removed_by_recheck())
+        elif isinstance(node, JoinNode):
+            self.is_join = True
         elif isinstance(node, AggregateNode):
             self.is_aggregate = True
         elif isinstance(node, SortNode):
@@ -105,6 +108,7 @@ class NodeFeatures:
 @dataclass
 class PlanFeatures:
     is_single_table: bool = False
+    has_join: bool = False
     has_aggregate: bool = False
     has_sort: bool = False
     has_key_access_index: bool = False
@@ -122,6 +126,7 @@ class PlanFeatures:
         return ','.join(filter(lambda a: getattr(self, a), self.__dict__.keys()))
 
     def update(self, nf: NodeFeatures):
+        self.has_join |= nf.is_join
         self.has_aggregate |= nf.is_aggregate
         self.has_sort |= nf.is_sort
         self.has_table_filter_seqscan |= (nf.is_seq_scan and nf.has_scan_filter)
@@ -193,6 +198,7 @@ class InvalidCostFixer(PlanNodeVisitor):
             super().generic_visit(node)
         return self.error
 
+
 class PlanNodeCollector(PlanNodeVisitor):
     def __init__(self, ctx, plan_ctx, node_detail_map, logger):
         super().__init__()
@@ -240,7 +246,7 @@ class PlanNodeCollector(PlanNodeVisitor):
             node_width = self.scan_node_width_map.get(table)
             # try postgres-generated number suffixed alias
             if (not node_width and node.table_alias
-                and (m := re.fullmatch(f'({node.table_name})_\d+', node.table_alias))):
+                    and (m := re.fullmatch(fr'({node.table_name})_\d+', node.table_alias))):
                 table = m.group(1)
                 node_width = self.scan_node_width_map.get(table)
             # use the estimated width if still no avail (TAQO collector was not able to find
@@ -338,8 +344,8 @@ class ExpressionAnalyzer:
         start = 0
         end = 0
         if ((start := expr.find('= ANY (')) > 0
-            and (end := expr.find(')', start)) > 0):
-            if m := re.search('\$(?P<first>\d+)[ ,\$0-9]+..., \$(?P<last>\d+)',
+                and (end := expr.find(')', start)) > 0):
+            if m := re.search(r'\$(?P<first>\d+)[ ,\$0-9]+..., \$(?P<last>\d+)',
                               expr[start:end]):
                 first = int(m.group('first'))
                 last = int(m.group('last'))
@@ -359,14 +365,13 @@ class CostReport(AbstractReportAction):
 
         self.table_row_map: Mapping[str: float] = dict()
         self.node_detail_map: Mapping[int: NodeDetail] = dict()
-        self.scan_node_map: Mapping[str: Mapping[ str: Iterable[ScanNode]]] = dict()
+        self.scan_node_map: Mapping[str: Mapping[str: Iterable[ScanNode]]] = dict()
         self.query_map: Mapping[str: tuple[Query, PlanFeatures]] = dict()
 
         self.num_plans: int = 0
         self.num_invalid_cost_plans: int = 0
         self.num_invalid_cost_plans_fixed: int = 0
         self.num_no_opt_queries: int = 0
-
 
     def get_image_path(self, file_name):
         return f'{self.report_location}/{self.image_folder}/{file_name}'
@@ -506,7 +511,7 @@ class CostReport(AbstractReportAction):
         self._end_collapsible()
 
     def report_plot_series_details(self, plot_series_details):
-        combinations = sum([ len(cond) for key, cond in plot_series_details.items() ])
+        combinations = sum([len(cond) for key, cond in plot_series_details.items()])
         self._start_collapsible(
             f"Search conditions in plot series ({combinations} conditions"
             f" in {len(plot_series_details.keys())} series)", sep="======")
@@ -523,12 +528,12 @@ class CostReport(AbstractReportAction):
         self._end_collapsible(sep="======")
 
     def report_plot_data(self, plot_data, data_labels):
-        num_dp = sum([ len(cond) for key, cond in plot_data.items() ])
+        num_dp = sum([len(cond) for key, cond in plot_data.items()])
         self._start_collapsible(f"Plot data ({num_dp})", sep="=====")
         self.report += "'''"
         if plot_data:
             table_header = '|'.join(data_labels)
-            table_header += f'|node'
+            table_header += '|node'
 
             for series_label, data_points in sorted(plot_data.items()):
                 self._start_collapsible(f"`{series_label}` ({len(data_points)})")
@@ -537,11 +542,12 @@ class CostReport(AbstractReportAction):
                 self.report += table_header
                 self._end_table_row()
                 for x, cost, time_ms, node in sorted(data_points,
-                                                     key=attrgetter('x','time_ms','cost')):
+                                                     key=attrgetter('x', 'time_ms', 'cost')):
                     self.report += f"|{x}\n|{time_ms}\n|{cost}\n|`pass:["
                     self.report += "  ".join([
                         node.name,
-                        node.get_search_condition_str(with_label=True),
+                        (node.get_search_condition_str(with_label=True)
+                         if isinstance(node, ScanNode) else ''),
                         ('Partial Aggregate' if self.is_scan_with_pushed_down_aggregate(node)
                          else '')
                     ])
@@ -567,17 +573,18 @@ class CostReport(AbstractReportAction):
             self.report_queries(spec.queries)
             self.report_plot_series_details(spec.series_details)
             self.report_plot_data(spec.series_data,
-                                  (f'{html.escape(spec.xlabel)}', f'time_ms', f'cost'))
+                                  (f'{html.escape(spec.xlabel)}', 'time_ms', 'cost'))
 
     __spcrs = " !\"#$%&'()*+,./:;<=>?[\\]^`{|}~"
     __xtab = str.maketrans(" !\"#$%&'()*+,./:;<=>?ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^`{|}~",
                            "---------------------abcdefghijklmnopqrstuvwxyz---------")
-    def make_file_name(self, str_list: Mapping[str]):
+
+    def make_file_name(self, str_list: Iterable[str]):
         return f"{'-'.join(s.strip(self.__spcrs).translate(self.__xtab) for s in str_list)}.svg"
 
     def draw_x_cost_time_plot(self, spec):
         title = spec.title
-        xy_labels = [ spec.xlabel, spec.ylabel1, spec.ylabel2 ]
+        xy_labels = [spec.xlabel, spec.ylabel1, spec.ylabel2]
 
         rcParams['font.family'] = 'serif'
         rcParams['font.size'] = 10
@@ -585,7 +592,7 @@ class CostReport(AbstractReportAction):
         fig, axs = plt.subplots(1, 3, figsize=(27, 8), layout='constrained')
         fig.suptitle(title, fontsize='xx-large')
 
-        chart_ix = [(1, 2), (0, 2), (0, 1)] # cost-time, x-time, x-cost
+        chart_ix = [(1, 2), (0, 2), (0, 1)]  # cost-time, x-time, x-cost
         log_scale_axis = [spec.options.log_scale_x,
                           spec.options.log_scale_cost,
                           spec.options.log_scale_time]
@@ -604,7 +611,7 @@ class CostReport(AbstractReportAction):
                         ha="center", va="center", alpha=0.4)
 
         for series_label, data_points in sorted(spec.series_data.items()):
-            data_points.sort(key=attrgetter('x','time_ms','cost'))
+            data_points.sort(key=attrgetter('x', 'time_ms', 'cost'))
             transposed_data = np.split(np.array(data_points).transpose(), len(DataPoint._fields))
             for i in range(len(chart_ix)):
                 x, y = chart_ix[i]
@@ -667,7 +674,7 @@ class CostReport(AbstractReportAction):
         # choices of colors = [ 'b', 'g', 'r', 'c', 'm', 'k' ]
         if 'Seq Scan' in series_label:
             return 'b'
-        elif re.search('Index Scan.*\(PK\)', series_label):
+        elif re.search(r'Index Scan.*\(PK\)', series_label):
             return 'm'
         elif 'Index Scan' in series_label:
             return 'r'
@@ -675,8 +682,8 @@ class CostReport(AbstractReportAction):
             return 'g'
         return 'k'
 
-    def collect_nodes_and_create_plots(self, specs: Mapping[ChartSpec]):
-        self.logger.info(f'Collecting data points...')
+    def collect_nodes_and_create_plots(self, specs: Iterable[ChartSpec]):
+        self.logger.info('Collecting data points...')
 
         for query_str, table_node_list_map in self.scan_node_map.items():
             for node_list in table_node_list_map.values():
@@ -688,7 +695,7 @@ class CostReport(AbstractReportAction):
                         spec.queries.add(query_str)
 
                         if node.is_seq_scan:
-                            series_label = f'Seq Scan'
+                            series_label = 'Seq Scan'
                         elif node.is_any_index_scan:
                             series_label = ''.join([
                                 f"{node.node_type}",
@@ -720,24 +727,24 @@ class CostReport(AbstractReportAction):
                         spec.series_details[series_label].add(f"{cond}" if cond
                                                               else "(No Search Condition)")
 
-        self.logger.info(f'Generating plots...')
+        self.logger.info('Generating plots...')
 
-        marker_style = [ '.', 'o', 'v', '^', '<',
-                         '>', '8', 's', 'p', '*',
-                         'h', 'H', 'D', 'd', 'P', 'X']
-        line_style = [ '-', '--', '-.', ':' ]
+        marker_style = ['.', 'o', 'v', '^', '<',
+                        '>', '8', 's', 'p', '*',
+                        'h', 'H', 'D', 'd', 'P', 'X']
+        line_style = ['-', '--', '-.', ':']
 
         for spec in specs:
             for i, (series_label, data_points) in enumerate(sorted(spec.series_data.items())):
                 fmt = self.get_series_color(series_label)
-                fmt += marker_style[ (i+3) % len(marker_style) ]
-                fmt += line_style[ (i+5) % len(line_style) ]
+                fmt += marker_style[(i+3) % len(marker_style)]
+                fmt += line_style[(i+5) % len(line_style)]
                 spec.series_format[series_label] = fmt
 
             self.draw_x_cost_time_plot(spec)
 
     def choose_chart_spec(self, chart_specs):
-        choices = '\n'.join([ f'{n}: {s.title}' for n, s in enumerate(chart_specs) ])
+        choices = '\n'.join([f'{n}: {s.title}' for n, s in enumerate(chart_specs)])
         while True:
             try:
                 response = int(input(f'{choices}\n[0-{len(chart_specs)-1}] --> '))
@@ -757,7 +764,7 @@ class CostReport(AbstractReportAction):
         # convert to display pixel coordinate
         [x], [y] = np.split(ax.transData.transform(line.get_xydata()).T, 2)
         (event_x, event_y) = (event.x, event.y)
-        maxd = 10 # pixel radius from the pick event point
+        maxd = 10  # pixel radius from the pick event point
 
         d = np.sqrt((x - event_x)**2 + (y - event_y)**2)
         # print(f'line={line}\n' \
@@ -1129,7 +1136,8 @@ class CostReport(AbstractReportAction):
                               and not node.get_local_filter()
                               and self.is_simple_literal_condition(node.get_search_condition_str())),
                 x_getter=lambda node: float(node.rows),
-                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}:width={self.get_node_width(node)} loops={node.nloops}'),
+                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}'
+                                     f':width={self.get_node_width(node)} loops={node.nloops}'),
             ),
             ChartSpec(
                 'Scans with simple filter(s)',
@@ -1140,7 +1148,8 @@ class CostReport(AbstractReportAction):
                               and self.is_simple_literal_condition(node.get_search_condition_str())
                               and 'ANY' not in node.get_search_condition_str()),
                 x_getter=lambda node: float(node.rows),
-                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}:width={self.get_node_width(node)} loops={node.nloops}'),
+                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}'
+                                     f':width={self.get_node_width(node)} loops={node.nloops}'),
             ),
             ChartSpec(
                 'Scans with complex (but no IN-lists) remote index and/or table filter',
@@ -1153,7 +1162,8 @@ class CostReport(AbstractReportAction):
                                   node.get_search_condition_str())
                               and 'ANY' not in node.get_search_condition_str()),
                 x_getter=lambda node: float(node.rows),
-                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}:width={self.get_node_width(node)} loops={node.nloops}'),
+                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}'
+                                     f':width={self.get_node_width(node)} loops={node.nloops}'),
             ),
             ChartSpec(
                 'Scans with complex (but no IN-lists) index and/or table filter',
@@ -1165,7 +1175,8 @@ class CostReport(AbstractReportAction):
                                   node.get_search_condition_str())
                               and 'ANY' not in node.get_search_condition_str()),
                 x_getter=lambda node: float(node.rows),
-                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}:width={self.get_node_width(node)} loops={node.nloops}'),
+                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}'
+                                     f':width={self.get_node_width(node)} loops={node.nloops}'),
             ),
             ChartSpec(
                 'Full scan + agg push down by table rows (linear scale)',
@@ -1203,7 +1214,8 @@ class CostReport(AbstractReportAction):
                 lambda query: self.has_scan_filter_indexscan(query),
                 lambda node: node.get_local_filter(),
                 x_getter=lambda node: float(node.rows),
-                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}:width={self.get_node_width(node)} loops={node.nloops}'),
+                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}'
+                                     f':width={self.get_node_width(node)} loops={node.nloops}'),
             ),
             ChartSpec(
                 '(EXP) No filter full scans',
@@ -1212,7 +1224,8 @@ class CostReport(AbstractReportAction):
                 lambda query: 'select count(*) from' not in query,
                 lambda node: (node.has_no_filter() and not node.get_index_cond()),
                 x_getter=lambda node: float(node.rows),
-                series_label_suffix=(lambda node: f' {node.index_name or node.table_name} width={self.get_node_width(node)}'),
+                series_label_suffix=(lambda node: f' {node.index_name or node.table_name}'
+                                     f':width={self.get_node_width(node)}'),
             ),
             ChartSpec(
                 '(EXP) All the scan nodes',

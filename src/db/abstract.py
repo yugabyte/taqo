@@ -7,6 +7,11 @@ class PlanNodeAccessor(ABC):
     def has_valid_cost(node):
         pass
 
+    @staticmethod
+    @abstractmethod
+    def fixup_invalid_cost(node):
+        pass
+
     # ScanNode methods
 
     @staticmethod

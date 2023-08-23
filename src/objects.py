@@ -2,6 +2,7 @@ import dataclasses
 from enum import Enum
 import re
 
+from collections.abc import Iterable, Mapping
 from typing import List, Dict, Type
 
 from config import Config
@@ -131,7 +132,7 @@ class Optimization(Query):
 
 class PlanNode:
     def __init__(self, accessor: PlanNodeAccessor, node_type):
-        self.acc = accessor
+        self.acc: PlanNodeAccessor = accessor
         self.node_type: str = node_type
         self.level: int = 0
         self.name: str = None
