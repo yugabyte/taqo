@@ -75,10 +75,11 @@ class AbstractReportAction:
     def _end_table(self):
         self.report += "|===\n"
 
-    def _start_source(self, additional_tags=None):
+    def _start_source(self, additional_tags=None, linenums=True):
         tags = f",{','.join(additional_tags)}" if additional_tags else ""
+        tags += ",linenums" if linenums else ""
 
-        self.report += f"[source{tags},linenums]\n----\n"
+        self.report += f"[source{tags}]\n----\n"
 
     def _end_source(self):
         self.report += "\n----\n"

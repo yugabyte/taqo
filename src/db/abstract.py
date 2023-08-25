@@ -59,3 +59,8 @@ class PlanNodeAccessor(ABC):
     @abstractmethod
     def get_rows_removed_by_recheck(node, with_label=False):
         pass
+
+    @staticmethod
+    @abstractmethod
+    def is_scan_with_partial_aggregate(node):
+        pass

@@ -153,7 +153,7 @@ class PlanNode:
         pass  # todo
 
     def __str__(self):
-        return f'{self.level}:{self.node_type}'
+        return self.name
 
     def get_full_str(self, estimate=True, actual=True, properties=False, level=False):
         return ''.join([
@@ -203,9 +203,11 @@ class ScanNode(PlanNode):
         self.is_any_index_scan = self.is_index_scan or self.is_index_only_scan
 
     def __str__(self):
-        s = f'{self.level}:{self.node_type}: '
-        s += f'table={self.table_name} alias={self.table_alias} index={self.index_name}'
-        return s
+        return '  '.join(filter(lambda s: s,
+                                [self.name,
+                                 self.get_search_condition_str(with_label=True),
+                                 ('Partial Aggregate'
+                                  if self.is_scan_with_partial_aggregate() else '')]))
 
     def get_search_condition_str(self, with_label=False):
         return ('  ' if with_label else ' AND ').join(
@@ -241,6 +243,9 @@ class ScanNode(PlanNode):
                 and not self.get_local_filter()
                 and not self.get_rows_removed_by_recheck())
 
+    def is_scan_with_partial_aggregate(self):
+        return self.acc.is_scan_with_partial_aggregate(self)
+
 
 class JoinNode(PlanNode):
     pass
@@ -256,6 +261,7 @@ class SortNode(PlanNode):
 
 class PlanNodeVisitor:
     pat = re.compile(r'([A-Z][a-z0-9]*)([A-Z])')
+
     def visit(self, node):
         snake_cased_class_name = self.pat.sub(r'\1_\2', node.__class__.__name__).lower()
         method = f'visit_{snake_cased_class_name}'

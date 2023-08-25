@@ -45,22 +45,22 @@ PLAN_PEAK_MEMORY = r"\nPeak memory:\s(\d+)"
 PLAN_TREE_CLEANUP = r"\n\s*->\s*|\n\s*"
 
 plan_node_header_pattern = re.compile(''.join([
-    '(?P<name>\S+(?:\s+\S+)*)',
-    '\s+',
-    '\(cost=(?P<sc>\d+\.\d*)\.\.(?P<tc>\d+\.\d*)\s+rows=(?P<prows>\d+)\s+width=(?P<width>\d+)\)',
-    '\s+',
-    '\((?:(?:actual time=(?P<st>\d+\.\d*)\.\.(?P<tt>\d+\.\d*) +rows=(?P<rows>\d+)',
-    ' +loops=(?P<loops>\d+))|(?:(?P<never>never executed)))\)',
+    r'(?P<name>\S+(?:\s+\S+)*)',
+    r'\s+',
+    r'\(cost=(?P<sc>\d+\.\d*)\.\.(?P<tc>\d+\.\d*)\s+rows=(?P<prows>\d+)\s+width=(?P<width>\d+)\)',
+    r'\s+',
+    r'\((?:(?:actual time=(?P<st>\d+\.\d*)\.\.(?P<tt>\d+\.\d*) +rows=(?P<rows>\d+)',
+    r' +loops=(?P<loops>\d+))|(?:(?P<never>never executed)))\)',
 ]))
 
 node_name_decomposition_pattern = re.compile(''.join([
-    '(?P<type>\S+(?:\s+\S+)* Scan)(?P<backward>\s+Backward)*(?: using (?P<index>\S+))*'
-    ' on (?:(?P<schema>\S+)\.)*(?P<table>\S+)(?: (?P<alias>\S+))*']))
+    r'(?P<type>\S+(?:\s+\S+)* Scan)(?P<backward>\s+Backward)*(?: using (?P<index>\S+))*'
+    r' on (?:(?P<schema>\S+)\.)*(?P<table>\S+)(?: (?P<alias>\S+))*']))
 
 hash_property_decomposition_pattern = re.compile(''.join([
-    'Buckets: (?P<buckets>\d+)(?: originally (?P<orig_buckets>\d+))*  ',
-    'Batches: (?P<batches>\d+)(?: originally (?P<orig_batches>\d+))*  ',
-    'Memory Usage: (?P<peak_mem>\d+)kB',
+    r'Buckets: (?P<buckets>\d+)(?: originally (?P<orig_buckets>\d+))*  ',
+    r'Batches: (?P<batches>\d+)(?: originally (?P<orig_batches>\d+))*  ',
+    r'Memory Usage: (?P<peak_mem>\d+)kB',
 ]))
 
 PG_DISABLE_COST = 10000000000.00
@@ -369,7 +369,7 @@ class PostgresPlanNodeAccessor(PlanNodeAccessor):
         scost = float(node.startup_cost)
         tcost = float(node.total_cost)
         if ((scost > 0 and log(scost, 10) >= float_info.mant_dig - 1)
-            or (tcost > 0 and log(tcost, 10) >= float_info.mant_dig - 1)):
+                or (tcost > 0 and log(tcost, 10) >= float_info.mant_dig - 1)):
             return True
 
         node.startup_cost = round(scost % PG_DISABLE_COST, 3)
@@ -418,6 +418,10 @@ class PostgresPlanNodeAccessor(PlanNodeAccessor):
                    or node.get_property('Rows Removed by Recheck', with_label)
                    or 0)
 
+    @staticmethod
+    def is_scan_with_partial_aggregate(node):
+        return bool(node.get_property('Partial Aggregate'))
+
 
 @dataclasses.dataclass
 class PostgresExecutionPlan(ExecutionPlan):
@@ -428,7 +432,7 @@ class PostgresExecutionPlan(ExecutionPlan):
         if match := node_name_decomposition_pattern.search(node_name):
             node_type = match.group('type')
             index_name = match.group('index')
-            is_backward = match.group('backward') != None
+            is_backward = match.group('backward') is not None
             table_name = match.group('table')
             table_alias = match.group('alias')
         else:
