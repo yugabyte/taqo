@@ -129,8 +129,9 @@ def calculate_avg_execution_time(cur,
 
 def try_to_collect_query_stats(cur, query, query_str):
     try:
+        tuned_query = query_str.replace("'", "''")
         evaluate_sql(cur, "select query, calls, total_time, min_time, max_time, mean_time, rows, yb_latency_histogram "
-                          f"from pg_stat_statements where query like '%{query_str}%';")
+                          f"from pg_stat_statements where query like '%{tuned_query}%';")
         result = cur.fetchall()
 
         query.query_stats = QueryStats(
