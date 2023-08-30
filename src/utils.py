@@ -7,6 +7,7 @@ import pglast
 from copy import copy
 
 import psycopg2
+from psycopg2._psycopg import cursor
 
 from config import Config
 from db.database import Database
@@ -76,32 +77,36 @@ def calculate_avg_execution_time(cur,
         # noinspection PyUnresolvedReferences
         try:
             if iteration >= num_warmup and not stats_reset:
-                evaluate_sql(cur, "SELECT pg_stat_statements_reset();")
+                sut_database.reset_query_statics(cur)
                 stats_reset = True
 
             sut_database.prepare_query_execution(cur)
             start_time = current_milli_time()
-            query.parameters = evaluate_sql(cur, query_str)
 
             if iteration == 0:
+                # evaluate test query without analyze and collect result hash
+                # using first iteration as a result collecting step
+                # even if EXPLAIN ANALYZE is explain query
+                query.parameters = evaluate_sql(cur, query.get_query())
+
                 cardinality, result = get_result(cur, is_dml)
-                if with_analyze:
-                    query.result_cardinality = extract_actual_cardinality(result)
-                    query.result_hash = "NONE"
-                else:
-                    query.result_cardinality = cardinality
-                    query.result_hash = get_md5(result)
-            elif iteration >= num_warmup:
-                if not execution_plan_collected:
-                    collect_execution_plan(cur, connection, query, sut_database)
-                    execution_plan_collected = True
 
-                if with_analyze:
-                    _, result = get_result(cur, is_dml)
+                query.result_cardinality = cardinality
+                query.result_hash = get_md5(result)
+            else:
+                query.parameters = evaluate_sql(cur, query_str)
 
-                    sum_execution_times += extract_execution_time_from_analyze(result)
-                else:
-                    sum_execution_times += current_milli_time() - start_time
+                if iteration >= num_warmup:
+                    if not execution_plan_collected:
+                        collect_execution_plan(cur, connection, query, sut_database)
+                        execution_plan_collected = True
+
+                    if with_analyze:
+                        _, result = get_result(cur, is_dml)
+
+                        sum_execution_times += extract_execution_time_from_analyze(result)
+                    else:
+                        sum_execution_times += current_milli_time() - start_time
         except psycopg2.errors.QueryCanceled:
             # failed by timeout - it's ok just skip optimization
             query.execution_time_ms = -1
@@ -122,30 +127,9 @@ def calculate_avg_execution_time(cur,
 
     query.execution_time_ms = sum_execution_times / actual_evaluations
 
-    try_to_collect_query_stats(cur, query, query_str)
+    sut_database.collect_query_statistics(cur, query, query_str)
 
     return True
-
-
-def try_to_collect_query_stats(cur, query, query_str):
-    try:
-        tuned_query = query_str.replace("'", "''")
-        evaluate_sql(cur, "select query, calls, total_time, min_time, max_time, mean_time, rows, yb_latency_histogram "
-                          f"from pg_stat_statements where query like '%{tuned_query}%';")
-        result = cur.fetchall()
-
-        query.query_stats = QueryStats(
-            calls=result[0][1],
-            total_time=result[0][2],
-            min_time=result[0][3],
-            max_time=result[0][4],
-            mean_time=result[0][5],
-            rows=result[0][6],
-            yb_latency_histogram=result[0][7],
-        )
-    except Exception:
-        # do nothing
-        pass
 
 
 def collect_execution_plan(cur,
@@ -301,7 +285,7 @@ def get_alias_table_names(sql_str, tables_in_sut):
     return table_objects_in_query
 
 
-def evaluate_sql(cur, sql):
+def evaluate_sql(cur: cursor, sql: str):
     config = Config()
 
     parameters, sql, sql_wo_parameters = parse_clear_and_parametrized_sql(sql)

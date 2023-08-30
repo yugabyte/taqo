@@ -5,10 +5,12 @@ import subprocess
 from time import sleep
 from typing import List
 
+from psycopg2._psycopg import cursor
+
 from collect import CollectResult, ResultsLoader
 from config import ConnectionConfig
 from db.postgres import Postgres, PostgresExecutionPlan, PLAN_TREE_CLEANUP, PostgresQuery
-from objects import ExecutionPlan
+from objects import ExecutionPlan, QueryStats, Query
 from utils import evaluate_sql
 
 DEFAULT_USERNAME = 'yugabyte'
@@ -97,6 +99,30 @@ class Yugabyte(Postgres):
 
     def get_execution_plan(self, execution_plan: str):
         return YugabyteExecutionPlan(execution_plan)
+
+    def reset_query_statics(self, cur: cursor):
+        evaluate_sql(cur, "SELECT pg_stat_statements_reset()")
+
+    def collect_query_statistics(self, cur: cursor, query: Query, query_str: str):
+        try:
+            tuned_query = query_str.replace("'", "''")
+            evaluate_sql(cur, "select query, calls, total_time, min_time, max_time, mean_time, rows, yb_latency_histogram "
+                              f"from pg_stat_statements where query like '%{tuned_query}%';")
+            result = cur.fetchall()
+
+            query.query_stats = QueryStats(
+                calls=result[0][1],
+                total_time=result[0][2],
+                min_time=result[0][3],
+                max_time=result[0][4],
+                mean_time=result[0][5],
+                rows=result[0][6],
+                latency=result[0][7],
+            )
+        except Exception:
+            # do nothing
+            pass
+
 
 
 class YugabyteQuery(PostgresQuery):

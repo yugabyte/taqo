@@ -78,7 +78,7 @@ class QueryStats:
     max_time: float
     mean_time: float
     rows: int
-    yb_latency_histogram: str
+    latency: str
 
     def __str__(self):
         return (
@@ -88,7 +88,7 @@ class QueryStats:
             f"Max time: {self.max_time}\n"
             f"Mean time: {self.mean_time}\n"
             f"Rows: {self.rows}\n"
-            f"Latency JSON: {self.yb_latency_histogram}"
+            f"Latency JSON: {self.latency}"
         )
 
 
