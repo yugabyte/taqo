@@ -109,6 +109,9 @@ class CollectAction:
                         '\n'.join(str(item[0]) for item in cur.fetchall()))
                     conn.rollback()
 
+                    # store default execution plan if query execution will fail
+                    original_query.execution_plan = default_execution_plan
+
                     # get costs off execution plan
                     self.sut_database.prepare_query_execution(cur)
                     evaluate_sql(cur, original_query.get_explain(EXPLAIN, [ExplainFlags.COSTS_OFF]))
@@ -119,7 +122,6 @@ class CollectAction:
                     self.define_min_execution_time(conn, cur, original_query)
 
                     if self.config.plans_only:
-                        original_query.execution_plan = default_execution_plan
                         original_query.execution_time_ms = default_execution_plan.get_estimated_cost()
                     else:
                         query_str = original_query.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
@@ -212,8 +214,6 @@ class CollectAction:
                     default_execution_plan = database.get_execution_plan(
                         '\n'.join(str(item[0]) for item in cur.fetchall())
                     )
-
-                    connection.rollback()
                 except psycopg2.errors.QueryCanceled as e:
                     # failed by timeout in getting EXPLAIN - issue
                     self.logger.exception(f"Getting default execution plan failed with {e}")
@@ -232,8 +232,7 @@ class CollectAction:
                     timed_out += 1
 
             # get new minimum execution time
-            if optimization.execution_time_ms != 0 and \
-                    optimization.execution_time_ms < min_execution_time:
+            if 0 < optimization.execution_time_ms < min_execution_time:
                 min_execution_time = optimization.execution_time_ms
 
             progress_bar.set_postfix(
