@@ -11,7 +11,7 @@ from psycopg2._psycopg import cursor
 
 from config import Config
 from db.database import Database
-from objects import Query, FieldInTableHelper, QueryStats
+from objects import Query, FieldInTableHelper
 
 PARAMETER_VARIABLE = r"[^'](\%\((.*?)\))"
 WITH_ORDINALITY = r"[Ww][Ii][Tt][Hh]\s*[Oo][Rr][Dd][Ii][Nn][Aa][Ll][Ii][Tt][yY]\s*[Aa][Ss]\s*.*(.*)"
@@ -42,7 +42,7 @@ def get_result(cur, is_dml):
 
     str_result = ""
     cardinality = 0
-    for row in tqdm(result):
+    for row in result:
         cardinality += 1
         for column_value in row:
             str_result += f"{str(column_value)}"
