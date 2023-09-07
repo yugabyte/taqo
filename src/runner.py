@@ -32,6 +32,8 @@ def parse_ddls(ddl_ops):
         result.add(DDLStep.DROP)
     if "analyze" in ddl_ops:
         result.add(DDLStep.ANALYZE)
+    if "compact" in ddl_ops:
+        result.add(DDLStep.COMPACT)
 
     return result
 
