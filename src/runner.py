@@ -16,24 +16,16 @@ from actions.collect import CollectAction
 from utils import get_bool_from_object, get_model_path
 
 
-def parse_ddls(ddl_ops):
+def parse_ddls(ddl_ops: str):
     result = set()
 
     if ddl_ops == "none":
         return result
 
-    if "database" in ddl_ops:
-        result.add(DDLStep.DATABASE)
-    if "create" in ddl_ops:
-        result.add(DDLStep.CREATE)
-    if "import" in ddl_ops:
-        result.add(DDLStep.IMPORT)
-    if "drop" in ddl_ops:
-        result.add(DDLStep.DROP)
-    if "analyze" in ddl_ops:
-        result.add(DDLStep.ANALYZE)
-    if "compact" in ddl_ops:
-        result.add(DDLStep.COMPACT)
+    ddl_ops = ddl_ops.lower()
+    for e in DDLStep:
+        if str(e.name).lower() in ddl_ops:
+            result.add(e)
 
     return result
 
