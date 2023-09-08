@@ -50,14 +50,14 @@ class Yugabyte(Postgres):
     def run_compaction(self, tables: list[str]):
         self.logger.info(f"Evaluating flush on tables {[table.name for table in tables]}")
         for table in tables:
-            subprocess.call(f'./yb-admin -master_addresses {self.config.connection.host}:7100 '
+            subprocess.call(f'./yb-admin -master_addresses {self.config.yugabyte_master_addresses}:7100 '
                             f'flush_table ysql.{self.config.connection.database} {table.name}',
                             shell=True,
                             cwd=self.config.yugabyte_bin_path)
 
         self.logger.info(f"Evaluating compaction on tables {[table.name for table in tables]}")
         for table in tables:
-            subprocess.call(f'./yb-admin -master_addresses {self.config.connection.host}:7100 '
+            subprocess.call(f'./yb-admin -master_addresses {self.config.yugabyte_master_addresses}:7100 '
                             f'compact_table ysql.{self.config.connection.database} {table.name}',
                             shell=True,
                             cwd=self.config.yugabyte_bin_path)
@@ -244,7 +244,7 @@ class YugabyteLocalCluster(Yugabyte):
         self.logger.info("Calling upgrade_ysql and trying to upgrade metadata")
 
         out = subprocess.check_output(
-            ['bin/yb-admin', 'upgrade_ysql', '-master_addresses', f"{self.config.host}:7100"],
+            ['bin/yb-admin', 'upgrade_ysql', '-master_addresses', f"{self.config.yugabyte_master_addresses}:7100"],
             stderr=subprocess.PIPE,
             cwd=self.path, )
 
