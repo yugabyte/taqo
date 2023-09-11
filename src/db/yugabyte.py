@@ -55,6 +55,9 @@ class Yugabyte(Postgres):
                             shell=True,
                             cwd=self.config.yugabyte_bin_path)
 
+        self.logger.info("Waiting for 2 minutes to operations to complete")
+        sleep(120)
+
         self.logger.info(f"Evaluating compaction on tables {[table.name for table in tables]}")
         for table in tables:
             subprocess.call(f'./yb-admin -master_addresses {self.config.yugabyte_master_addresses}:7100 '
