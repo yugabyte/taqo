@@ -123,7 +123,7 @@ class Yugabyte(Postgres):
                 latency=result[0][7],
             )
         except Exception:
-            # do nothing
+            # TODO do nothing
             pass
 
 
