@@ -242,7 +242,7 @@ class ScoreReport(AbstractReportAction):
                  [best_optimization.execution_time_ms],
                  [best_optimization.execution_plan.get_estimated_cost()], 'go')
 
-        file_name = f'../imgs/query_{self.reported_queries_counter}{scale}.png'
+        file_name = f'imgs/query_{self.reported_queries_counter}{scale}.png'
         plt.savefig(f"report/{self.start_date}/{file_name}", dpi=300)
         plt.close()
 
@@ -600,8 +600,8 @@ class ScoreReport(AbstractReportAction):
         subreport.report += "|Default|Log scale\n"
         query_plot = self.create_query_plot(yb_best, yb_query.optimizations, yb_query)
         query_plot_log = self.create_query_plot(yb_best, yb_query.optimizations, yb_query, "log")
-        subreport.report += f"a|image::{query_plot}[Default,align=\"center\"]\n"
-        subreport.report += f"a|image::{query_plot_log}[Log scale,align=\"center\"]\n"
+        subreport.report += f"a|image::../{query_plot}[Default,align=\"center\"]\n"
+        subreport.report += f"a|image::../{query_plot_log}[Log scale,align=\"center\"]\n"
         subreport.end_table()
 
         subreport.add_double_newline()
