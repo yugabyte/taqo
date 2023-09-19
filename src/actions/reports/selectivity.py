@@ -108,77 +108,77 @@ class SelectivityReport(AbstractReportAction):
         self.report += f"=== Query {default.query_hash}"
         self.report += f"\n{default.tag}\n"
         self.report += "\n<<top,Go to top>>\n"
-        self._add_double_newline()
+        self.add_double_newline()
 
-        self._start_source(["sql"])
+        self.start_source(["sql"])
         self.report += format_sql(default.query.replace("|", "\|"))
-        self._end_source()
+        self.end_source()
 
-        self._add_double_newline()
+        self.add_double_newline()
 
-        self._start_table("7")
+        self.start_table("7")
         self.report += "|Metric|Default|Default+QA|TA|TA + QA|S+TA|S+TA+QA\n"
-        self._start_table_row()
+        self.start_table_row()
         self.report += f"Cardinality|{default.result_cardinality}|{default_analyze.result_cardinality}|" \
                        f"{analyze.result_cardinality}|{analyze_analyze.result_cardinality}|" \
                        f"{all.result_cardinality}|{all_analyze.result_cardinality}"
-        self._end_table_row()
-        self._start_table_row()
+        self.end_table_row()
+        self.start_table_row()
         self.report += f"Optimizer cost|{default.execution_plan.get_estimated_cost()}|{default_analyze.execution_plan.get_estimated_cost()}|" \
                        f"{analyze.execution_plan.get_estimated_cost()}|{analyze_analyze.execution_plan.get_estimated_cost()}|" \
                        f"{all.execution_plan.get_estimated_cost()}|{all_analyze.execution_plan.get_estimated_cost()}"
-        self._end_table_row()
-        self._start_table_row()
+        self.end_table_row()
+        self.start_table_row()
         self.report += f"Execution time|{default.execution_time_ms}|{default_analyze.execution_time_ms}|" \
                        f"{analyze.execution_time_ms}|{analyze_analyze.execution_time_ms}|" \
                        f"{all.execution_time_ms}|{all_analyze.execution_time_ms}"
-        self._end_table_row()
-        self._end_table()
+        self.end_table_row()
+        self.end_table()
 
-        self._start_table()
+        self.start_table()
 
-        self._start_table_row()
+        self.start_table_row()
 
-        self._start_collapsible("Default approach plan (w/o analyze)")
-        self._start_source(["diff"])
+        self.start_collapsible("Default approach plan (w/o analyze)")
+        self.start_source(["diff"])
         self.report += default.execution_plan.full_str
-        self._end_source()
-        self._end_collapsible()
+        self.end_source()
+        self.end_collapsible()
 
-        self._start_collapsible("Default approach plan with EXPLAIN ANALYZE (w/o analyze)")
-        self._start_source(["diff"])
+        self.start_collapsible("Default approach plan with EXPLAIN ANALYZE (w/o analyze)")
+        self.start_source(["diff"])
         self.report += default_analyze.execution_plan.full_str
-        self._end_source()
-        self._end_collapsible()
+        self.end_source()
+        self.end_collapsible()
 
-        self._start_collapsible("Plan with analyzed table (w/ analyze)")
-        self._start_source(["diff"])
+        self.start_collapsible("Plan with analyzed table (w/ analyze)")
+        self.start_source(["diff"])
         self.report += analyze.execution_plan.full_str
-        self._end_source()
-        self._end_collapsible()
+        self.end_source()
+        self.end_collapsible()
 
-        self._start_collapsible("Plan with analyzed table with EXPLAIN ANALYZE (w/ analyze)")
-        self._start_source(["diff"])
+        self.start_collapsible("Plan with analyzed table with EXPLAIN ANALYZE (w/ analyze)")
+        self.start_source(["diff"])
         self.report += analyze_analyze.execution_plan.full_str
-        self._end_source()
-        self._end_collapsible()
+        self.end_source()
+        self.end_collapsible()
 
-        self._start_collapsible("Stats + table analyze (w/ analyze and statistics)")
-        self._start_source(["diff"])
+        self.start_collapsible("Stats + table analyze (w/ analyze and statistics)")
+        self.start_source(["diff"])
         self.report += all.execution_plan.full_str
-        self._end_source()
-        self._end_collapsible()
+        self.end_source()
+        self.end_collapsible()
 
-        self._start_collapsible(
+        self.start_collapsible(
             "Stats + table analyze with EXPLAIN ANALYZE (w/ analyze and statistics)")
-        self._start_source(["diff"])
+        self.start_source(["diff"])
         self.report += all_analyze.execution_plan.full_str
-        self._end_source()
-        self._end_collapsible()
+        self.end_source()
+        self.end_collapsible()
 
-        self._start_source(["diff"])
+        self.start_source(["diff"])
 
-        diff = self._get_plan_diff(
+        diff = self.get_plan_diff(
             default.execution_plan.full_str,
             all_analyze.execution_plan.full_str
         )
@@ -186,11 +186,11 @@ class SelectivityReport(AbstractReportAction):
             diff = default.execution_plan.full_str
 
         self.report += diff
-        self._end_source()
-        self._end_table_row()
+        self.end_source()
+        self.end_table_row()
 
         self.report += "\n"
 
-        self._end_table()
+        self.end_table()
 
-        self._add_double_newline()
+        self.add_double_newline()
