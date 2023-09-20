@@ -3,7 +3,7 @@ from sql_formatter.core import format_sql
 from collect import CollectResult
 from objects import Query
 from actions.report import AbstractReportAction
-from utils import allowed_diff
+from utils import allowed_diff, get_plan_diff
 
 
 class SelectivityReport(AbstractReportAction):
@@ -67,31 +67,31 @@ class SelectivityReport(AbstractReportAction):
 
     def build_report(self):
         # link to top
-        self.report += "\n[#top]\n== All results by analysis type\n"
+        self.content += "\n[#top]\n== All results by analysis type\n"
         # different results links
-        self.report += "\n<<error>>\n"
-        self.report += "\n<<worse>>\n"
-        self.report += "\n<<same_time>>\n"
-        self.report += "\n<<improved>>\n"
-        self.report += "\n<<same_plan>>\n"
+        self.content += "\n<<error>>\n"
+        self.content += "\n<<worse>>\n"
+        self.content += "\n<<same_time>>\n"
+        self.content += "\n<<improved>>\n"
+        self.content += "\n<<same_plan>>\n"
 
-        self.report += f"\n[#error]\n== ERROR: Different EXPLAIN and EXPLAIN ANALYZE plans ({len(self.different_explain_plans)})\n\n"
+        self.content += f"\n[#error]\n== ERROR: Different EXPLAIN and EXPLAIN ANALYZE plans ({len(self.different_explain_plans)})\n\n"
         for query in self.different_explain_plans:
             self.__report_query(*query)
 
-        self.report += f"\n[#worse]\n== Worse execution time queries ({len(self.worse_execution_time)})\n\n"
+        self.content += f"\n[#worse]\n== Worse execution time queries ({len(self.worse_execution_time)})\n\n"
         for query in self.worse_execution_time:
             self.__report_query(*query)
 
-        self.report += f"\n[#same_time]\n== Almost same execution time queries ({len(self.almost_same_execution_time)})\n\n"
+        self.content += f"\n[#same_time]\n== Almost same execution time queries ({len(self.almost_same_execution_time)})\n\n"
         for query in self.almost_same_execution_time:
             self.__report_query(*query)
 
-        self.report += f"\n[#improved]\n== Improved execution time ({len(self.improved_execution_time)})\n\n"
+        self.content += f"\n[#improved]\n== Improved execution time ({len(self.improved_execution_time)})\n\n"
         for query in self.improved_execution_time:
             self.__report_query(*query)
 
-        self.report += f"\n[#same_plan]\n\n== Same execution plan ({len(self.same_execution_plan)})\n\n"
+        self.content += f"\n[#same_plan]\n\n== Same execution plan ({len(self.same_execution_plan)})\n\n"
         for query in self.same_execution_plan:
             self.__report_query(*query)
 
@@ -105,31 +105,31 @@ class SelectivityReport(AbstractReportAction):
                        all_analyze: Query):
         self.reported_queries_counter += 1
 
-        self.report += f"=== Query {default.query_hash}"
-        self.report += f"\n{default.tag}\n"
-        self.report += "\n<<top,Go to top>>\n"
+        self.content += f"=== Query {default.query_hash}"
+        self.content += f"\n{default.tag}\n"
+        self.content += "\n<<top,Go to top>>\n"
         self.add_double_newline()
 
         self.start_source(["sql"])
-        self.report += format_sql(default.query.replace("|", "\|"))
+        self.content += format_sql(default.query.replace("|", "\|"))
         self.end_source()
 
         self.add_double_newline()
 
         self.start_table("7")
-        self.report += "|Metric|Default|Default+QA|TA|TA + QA|S+TA|S+TA+QA\n"
+        self.content += "|Metric|Default|Default+QA|TA|TA + QA|S+TA|S+TA+QA\n"
         self.start_table_row()
-        self.report += f"Cardinality|{default.result_cardinality}|{default_analyze.result_cardinality}|" \
+        self.content += f"Cardinality|{default.result_cardinality}|{default_analyze.result_cardinality}|" \
                        f"{analyze.result_cardinality}|{analyze_analyze.result_cardinality}|" \
                        f"{all.result_cardinality}|{all_analyze.result_cardinality}"
         self.end_table_row()
         self.start_table_row()
-        self.report += f"Optimizer cost|{default.execution_plan.get_estimated_cost()}|{default_analyze.execution_plan.get_estimated_cost()}|" \
+        self.content += f"Optimizer cost|{default.execution_plan.get_estimated_cost()}|{default_analyze.execution_plan.get_estimated_cost()}|" \
                        f"{analyze.execution_plan.get_estimated_cost()}|{analyze_analyze.execution_plan.get_estimated_cost()}|" \
                        f"{all.execution_plan.get_estimated_cost()}|{all_analyze.execution_plan.get_estimated_cost()}"
         self.end_table_row()
         self.start_table_row()
-        self.report += f"Execution time|{default.execution_time_ms}|{default_analyze.execution_time_ms}|" \
+        self.content += f"Execution time|{default.execution_time_ms}|{default_analyze.execution_time_ms}|" \
                        f"{analyze.execution_time_ms}|{analyze_analyze.execution_time_ms}|" \
                        f"{all.execution_time_ms}|{all_analyze.execution_time_ms}"
         self.end_table_row()
@@ -141,55 +141,55 @@ class SelectivityReport(AbstractReportAction):
 
         self.start_collapsible("Default approach plan (w/o analyze)")
         self.start_source(["diff"])
-        self.report += default.execution_plan.full_str
+        self.content += default.execution_plan.full_str
         self.end_source()
         self.end_collapsible()
 
         self.start_collapsible("Default approach plan with EXPLAIN ANALYZE (w/o analyze)")
         self.start_source(["diff"])
-        self.report += default_analyze.execution_plan.full_str
+        self.content += default_analyze.execution_plan.full_str
         self.end_source()
         self.end_collapsible()
 
         self.start_collapsible("Plan with analyzed table (w/ analyze)")
         self.start_source(["diff"])
-        self.report += analyze.execution_plan.full_str
+        self.content += analyze.execution_plan.full_str
         self.end_source()
         self.end_collapsible()
 
         self.start_collapsible("Plan with analyzed table with EXPLAIN ANALYZE (w/ analyze)")
         self.start_source(["diff"])
-        self.report += analyze_analyze.execution_plan.full_str
+        self.content += analyze_analyze.execution_plan.full_str
         self.end_source()
         self.end_collapsible()
 
         self.start_collapsible("Stats + table analyze (w/ analyze and statistics)")
         self.start_source(["diff"])
-        self.report += all.execution_plan.full_str
+        self.content += all.execution_plan.full_str
         self.end_source()
         self.end_collapsible()
 
         self.start_collapsible(
             "Stats + table analyze with EXPLAIN ANALYZE (w/ analyze and statistics)")
         self.start_source(["diff"])
-        self.report += all_analyze.execution_plan.full_str
+        self.content += all_analyze.execution_plan.full_str
         self.end_source()
         self.end_collapsible()
 
         self.start_source(["diff"])
 
-        diff = self.get_plan_diff(
+        diff = get_plan_diff(
             default.execution_plan.full_str,
             all_analyze.execution_plan.full_str
         )
         if not diff:
             diff = default.execution_plan.full_str
 
-        self.report += diff
+        self.content += diff
         self.end_source()
         self.end_table_row()
 
-        self.report += "\n"
+        self.content += "\n"
 
         self.end_table()
 

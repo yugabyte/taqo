@@ -404,7 +404,7 @@ class CostReport(AbstractReportAction):
         return f'{self.report_location}/{self.image_folder}/{file_name}'
 
     def add_image(self, file_name, title):
-        self.report += f"a|image::{self.image_folder}/{file_name}[{title}]\n"
+        self.content += f"a|image::{self.image_folder}/{file_name}[{title}]\n"
 
     @classmethod
     def generate_report(cls, loq: CollectResult, interactive):
@@ -443,7 +443,7 @@ class CostReport(AbstractReportAction):
         return "cost validation"
 
     def define_version(self, version):
-        self.report += f"[VERSION]\n====\n{version}\n====\n\n"
+        self.content += f"[VERSION]\n====\n{version}\n====\n\n"
 
     def add_table_row_count(self, tables):
         for t in tables:
@@ -522,24 +522,24 @@ class CostReport(AbstractReportAction):
     def report_chart_filters(self, spec: ChartSpec):
         self.start_collapsible("Chart specifications")
         self.start_source(["python"])
-        self.report += "=== Query Filters ===\n"
-        self.report += inspect.getsource(spec.query_filter)
-        self.report += "=== Node Filters ===\n"
-        self.report += inspect.getsource(spec.node_filter)
-        self.report += "=== X Axsis Data ===\n"
-        self.report += inspect.getsource(spec.x_getter)
-        self.report += "=== Series Suffix ===\n"
-        self.report += inspect.getsource(spec.series_label_suffix)
-        self.report += "=== Options ===\n"
-        self.report += str(spec.options)
+        self.content += "=== Query Filters ===\n"
+        self.content += inspect.getsource(spec.query_filter)
+        self.content += "=== Node Filters ===\n"
+        self.content += inspect.getsource(spec.node_filter)
+        self.content += "=== X Axsis Data ===\n"
+        self.content += inspect.getsource(spec.x_getter)
+        self.content += "=== Series Suffix ===\n"
+        self.content += inspect.getsource(spec.series_label_suffix)
+        self.content += "=== Options ===\n"
+        self.content += str(spec.options)
         self.end_source()
         self.end_collapsible()
 
     def report_queries(self, queries):
         self.start_collapsible(f"Queries ({len(queries)})")
         self.start_source(["sql"])
-        self.report += "\n".join([query if query.endswith(";") else f"{query};"
-                                  for query in sorted(queries)])
+        self.content += "\n".join([query if query.endswith(";") else f"{query};"
+                                   for query in sorted(queries)])
         self.end_source()
         self.end_collapsible()
 
@@ -549,35 +549,35 @@ class CostReport(AbstractReportAction):
         num_dp = sum([len(cond) for key, cond in outliers.items()])
         self.start_collapsible(
             f"#Extreme {axis_label} outliers excluded from the plots ({num_dp})#", sep="=====")
-        self.report += "'''\n"
+        self.content += "'''\n"
         table_header = '|'.join(data_labels)
         table_header += '\n'
         for series_label, data_points in sorted(outliers.items()):
             self.start_collapsible(f"`{series_label}` ({len(data_points)})")
             self.start_table('<1m,2*^1m,2*5a')
             self.start_table_row()
-            self.report += table_header
+            self.content += table_header
             self.end_table_row()
             for x, cost, time_ms, node in data_points:
-                self.report += f">|{x:.3f}\n>|{time_ms:.3f}\n>|{cost:.3f}\n|\n"
+                self.content += f">|{x:.3f}\n>|{time_ms:.3f}\n>|{cost:.3f}\n|\n"
                 self.start_source(["sql"], linenums=False)
-                self.report += str(node)
+                self.content += str(node)
                 self.end_source()
-                self.report += "|\n"
+                self.content += "|\n"
                 self.start_source(["sql"], linenums=False)
-                self.report += self.get_node_query(node).query
+                self.content += self.get_node_query(node).query
                 self.end_source()
 
             self.end_table()
             self.end_collapsible()
 
-        self.report += "'''\n"
+        self.content += "'''\n"
         self.end_collapsible(sep="=====")
 
     def report_plot_data(self, plot_data, data_labels):
         num_dp = sum([len(cond) for key, cond in plot_data.items()])
         self.start_collapsible(f"Plot data ({num_dp})", sep="=====")
-        self.report += "'''\n"
+        self.content += "'''\n"
         if plot_data:
             table_header = '|'.join(data_labels)
             table_header += '\n'
@@ -585,46 +585,46 @@ class CostReport(AbstractReportAction):
                 self.start_collapsible(f"`{series_label}` ({len(data_points)})")
                 self.start_table('<1m,2*^1m,8a')
                 self.start_table_row()
-                self.report += table_header
+                self.content += table_header
                 self.end_table_row()
                 for x, cost, time_ms, node in sorted(data_points,
                                                      key=attrgetter('x', 'time_ms', 'cost')):
-                    self.report += f">|{x:.3f}\n>|{time_ms:.3f}\n>|{cost:.3f}\n|\n"
+                    self.content += f">|{x:.3f}\n>|{time_ms:.3f}\n>|{cost:.3f}\n|\n"
                     self.start_source(["sql"], linenums=False)
-                    self.report += str(node)
+                    self.content += str(node)
                     self.end_source()
 
                 self.end_table()
                 self.end_collapsible()
 
-        self.report += "'''\n"
+        self.content += "'''\n"
         self.end_collapsible(sep="=====")
 
     def report_stats(self, spec: ChartSpec):
         self.start_table('3,8*^1m')
-        self.report += f'|{html.escape(spec.ylabel1)}'
-        self.report += '|p0 (min)'
-        self.report += '|p25 (Q1)'
-        self.report += '|p50{nbsp}(median)'
-        self.report += '|mean'
-        self.report += '|p75 (Q3)'
-        self.report += '|p100 (max)'
-        self.report += '|IQR (Q3-Q1)'
-        self.report += '|SD\n\n'
+        self.content += f'|{html.escape(spec.ylabel1)}'
+        self.content += '|p0 (min)'
+        self.content += '|p25 (Q1)'
+        self.content += '|p50{nbsp}(median)'
+        self.content += '|mean'
+        self.content += '|p75 (Q3)'
+        self.content += '|p100 (max)'
+        self.content += '|IQR (Q3-Q1)'
+        self.content += '|SD\n\n'
 
         for series_label, data_points in sorted(spec.series_data.items()):
             transposed_data = np.split(np.array(data_points).transpose(), len(DataPoint._fields))
             xdata = transposed_data[0][0]
             ptile = np.percentile(xdata, [0, 25, 50, 75, 100])
-            self.report += f'|{series_label}\n'
-            self.report += f'>|{ptile[0]:.3f}\n'
-            self.report += f'>|{ptile[1]:.3f}\n'
-            self.report += f'>|{ptile[2]:.3f}\n'
-            self.report += f'>|{np.mean(xdata):.3f}\n'
-            self.report += f'>|{ptile[3]:.3f}\n'
-            self.report += f'>|{ptile[4]:.3f}\n'
-            self.report += f'>|{ptile[3]-ptile[1]:.3f}\n'
-            self.report += f'>|{np.std(xdata):.3f}\n'
+            self.content += f'|{series_label}\n'
+            self.content += f'>|{ptile[0]:.3f}\n'
+            self.content += f'>|{ptile[1]:.3f}\n'
+            self.content += f'>|{ptile[2]:.3f}\n'
+            self.content += f'>|{np.mean(xdata):.3f}\n'
+            self.content += f'>|{ptile[3]:.3f}\n'
+            self.content += f'>|{ptile[4]:.3f}\n'
+            self.content += f'>|{ptile[3] - ptile[1]:.3f}\n'
+            self.content += f'>|{np.std(xdata):.3f}\n'
 
         self.end_table()
 
@@ -644,20 +644,20 @@ class CostReport(AbstractReportAction):
                                                  'time_ms', 'cost', 'node'])
 
     def build_report(self, chart_specs, dist_chart_specs):
-        self.report += REPORT_DESCRIPTION
-        self.report += "\n== Scan Nodes\n"
+        self.content += REPORT_DESCRIPTION
+        self.content += "\n== Scan Nodes\n"
         id = 0
 
         def report_one_chart(self, id, spec):
-            self.report += f"=== {id}. {html.escape(spec.title)}\n{spec.description}\n"
+            self.content += f"=== {id}. {html.escape(spec.title)}\n{spec.description}\n"
             self.report_chart(spec)
 
-        self.report += "\n=== Scan Node x-time-cost chartset\n"
+        self.content += "\n=== Scan Node x-time-cost chartset\n"
         for spec in chart_specs:
             report_one_chart(self, id, spec)
             id += 1
 
-        self.report += "\n=== Scan Node distribution charts\n"
+        self.content += "\n=== Scan Node distribution charts\n"
         for spec in dist_chart_specs:
             report_one_chart(self, id, spec)
             id += 1

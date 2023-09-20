@@ -6,7 +6,7 @@ from sql_formatter.core import format_sql
 from collect import CollectResult
 from objects import Query
 from actions.report import AbstractReportAction
-from utils import allowed_diff
+from utils import allowed_diff, get_plan_diff
 
 
 class TaqoReport(AbstractReportAction):
@@ -39,7 +39,7 @@ class TaqoReport(AbstractReportAction):
         return "TAQO"
 
     def define_version(self, version):
-        self.report += f"[VERSION]\n====\n{version}\n====\n\n"
+        self.content += f"[VERSION]\n====\n{version}\n====\n\n"
 
     def calculate_score(self, query):
         if query.execution_time_ms == 0:
@@ -84,21 +84,21 @@ class TaqoReport(AbstractReportAction):
 
     def build_report(self):
         # link to top
-        self.report += "\n[#top]\n== All results by analysis type\n"
+        self.content += "\n[#top]\n== All results by analysis type\n"
         # different results links
-        self.report += "\n<<result>>\n"
-        self.report += "\n<<better>>\n"
-        self.report += "\n<<found>>\n"
+        self.content += "\n<<result>>\n"
+        self.content += "\n<<better>>\n"
+        self.content += "\n<<found>>\n"
 
-        self.report += f"\n[#result]\n== Result validation failure ({len(self.failed_validation)})\n\n"
+        self.content += f"\n[#result]\n== Result validation failure ({len(self.failed_validation)})\n\n"
         for query in self.failed_validation:
             self.__report_query(query[0], query[1], True)
 
-        self.report += f"\n[#better]\n== Better plan found queries ({len(self.better_plan_found)})\n\n"
+        self.content += f"\n[#better]\n== Better plan found queries ({len(self.better_plan_found)})\n\n"
         for query in self.better_plan_found:
             self.__report_query(query[0], query[1], True)
 
-        self.report += f"\n[#found]\n== No better plan found ({len(self.same_execution_plan)})\n\n"
+        self.content += f"\n[#found]\n== No better plan found ({len(self.same_execution_plan)})\n\n"
         for query in self.same_execution_plan:
             self.__report_query(query[0], query[1], False)
 
@@ -110,7 +110,7 @@ class TaqoReport(AbstractReportAction):
                 if allowed_diff(self.config, best_optimization.execution_time_ms,
                                 optimization.execution_time_ms)):
             self.start_collapsible("All best optimization hints")
-            self.report += add_to_report
+            self.content += add_to_report
             self.end_collapsible()
 
     def __report_heatmap(self, query: Query):
@@ -146,7 +146,7 @@ class TaqoReport(AbstractReportAction):
 
         self.start_collapsible("Plan heatmap")
         self.start_source(["diff"])
-        self.report += result
+        self.content += result
         self.end_source()
         self.end_collapsible()
 
@@ -166,54 +166,54 @@ class TaqoReport(AbstractReportAction):
 
         self.reported_queries_counter += 1
 
-        self.report += f"=== Query {query.query_hash} " \
-                       f"(Optimizer efficiency - {self.calculate_score(query)})"
-        self.report += "\n<<top,Go to top>>\n"
+        self.content += f"=== Query {query.query_hash} " \
+                        f"(Optimizer efficiency - {self.calculate_score(query)})"
+        self.content += "\n<<top,Go to top>>\n"
         self.add_double_newline()
 
         self.start_source(["sql"])
-        self.report += format_sql(query.query.replace("|", "\|"))
+        self.content += format_sql(query.query.replace("|", "\|"))
         self.end_source()
 
         self.add_double_newline()
-        self.report += f"Default explain hints - `{query.explain_hints}`"
+        self.content += f"Default explain hints - `{query.explain_hints}`"
         self.add_double_newline()
 
         if show_best:
             self.add_double_newline()
-            self.report += f"Better explain hints - `{best_optimization.explain_hints}`"
+            self.content += f"Better explain hints - `{best_optimization.explain_hints}`"
             self.add_double_newline()
 
             self.__report_near_queries(query)
 
         filename = self.create_plot(best_optimization, query.optimizations, query)
-        self.report += f"image::{filename}[\"Query {self.reported_queries_counter}\"]"
+        self.content += f"image::{filename}[\"Query {self.reported_queries_counter}\"]"
 
         self.add_double_newline()
 
         self.start_table("3")
-        self.report += "|Metric|Default|Best\n"
+        self.content += "|Metric|Default|Best\n"
         if 'order by' in query.query:
             self.start_table_row()
             if self.config.compare_with_pg:
-                self.report += \
+                self.content += \
                     f"!! Result hash|{query.result_hash}|{best_optimization.result_hash} (yb) != {pg_query.result_hash} (pg)" \
                         if pg_query.result_hash != query.result_hash else \
                         f"Result hash|`{query.result_hash}|{best_optimization.result_hash} (yb) != {pg_query.result_hash} (pg)"
             elif best_optimization.result_hash != query.result_hash:
-                self.report += f"!! Result hash|{query.result_hash}|{best_optimization.result_hash}"
+                self.content += f"!! Result hash|{query.result_hash}|{best_optimization.result_hash}"
             else:
-                self.report += f"Result hash|{query.result_hash}|{best_optimization.result_hash}"
+                self.content += f"Result hash|{query.result_hash}|{best_optimization.result_hash}"
             self.end_table_row()
 
         self.start_table_row()
-        self.report += f"Cardinality|{query.result_cardinality}|{best_optimization.result_cardinality}"
+        self.content += f"Cardinality|{query.result_cardinality}|{best_optimization.result_cardinality}"
         self.end_table_row()
         self.start_table_row()
-        self.report += f"Optimizer cost|{query.execution_plan.get_estimated_cost()}|{best_optimization.execution_plan.get_estimated_cost()}"
+        self.content += f"Optimizer cost|{query.execution_plan.get_estimated_cost()}|{best_optimization.execution_plan.get_estimated_cost()}"
         self.end_table_row()
         self.start_table_row()
-        self.report += f"Execution time|{query.execution_time_ms}|{best_optimization.execution_time_ms}"
+        self.content += f"Execution time|{query.execution_time_ms}|{best_optimization.execution_time_ms}"
         self.end_table_row()
         self.end_table()
 
@@ -224,28 +224,28 @@ class TaqoReport(AbstractReportAction):
             bitmap_used = "!!! bitmap !!!" if "bitmap" in pg_query.execution_plan.full_str.lower() else ""
             self.start_collapsible(f"Postgres plan {bitmap_used}")
             self.start_source(["diff"])
-            self.report += pg_query.execution_plan.full_str
+            self.content += pg_query.execution_plan.full_str
             self.end_source()
             self.end_collapsible()
 
             self.start_collapsible("Postgres plan diff")
             self.start_source(["diff"])
             # postgres plan should be red
-            self.report += self.get_plan_diff(pg_query.execution_plan.full_str,
-                                              query.execution_plan.full_str, )
+            self.content += get_plan_diff(pg_query.execution_plan.full_str,
+                                          query.execution_plan.full_str, )
             self.end_source()
             self.end_collapsible()
 
             best_pg = pg_query.get_best_optimization(self.config)
             self.start_collapsible("Best Postgres plan")
             self.start_source(["diff"])
-            self.report += best_pg.execution_plan.full_str
+            self.content += best_pg.execution_plan.full_str
             self.end_source()
             self.end_collapsible()
 
             self.start_collapsible("Best Postgres plan diff with YB default")
             self.start_source(["diff"])
-            self.report += self.get_plan_diff(
+            self.content += get_plan_diff(
                 query.execution_plan.full_str,
                 best_pg.execution_plan.full_str,
             )
@@ -254,7 +254,7 @@ class TaqoReport(AbstractReportAction):
 
             self.start_collapsible("Best Postgres plan diff with YB best")
             self.start_source(["diff"])
-            self.report += self.get_plan_diff(
+            self.content += get_plan_diff(
                 best_pg.execution_plan.full_str,
                 best_optimization.execution_plan.full_str,
             )
@@ -266,30 +266,30 @@ class TaqoReport(AbstractReportAction):
 
         self.start_collapsible("Original plan")
         self.start_source(["diff"])
-        self.report += query.execution_plan.full_str
+        self.content += query.execution_plan.full_str
         self.end_source()
         self.end_collapsible()
 
         self.start_collapsible("Best plan")
         self.start_source(["diff"])
-        self.report += best_optimization.execution_plan.full_str
+        self.content += best_optimization.execution_plan.full_str
         self.end_source()
         self.end_collapsible()
 
         self.start_source(["diff"])
 
-        diff = self.get_plan_diff(
+        diff = get_plan_diff(
             query.execution_plan.full_str,
             best_optimization.execution_plan.full_str
         )
         if not diff:
             diff = query.execution_plan.full_str
 
-        self.report += diff
+        self.content += diff
         self.end_source()
         self.end_table_row()
 
-        self.report += "\n"
+        self.content += "\n"
 
         self.end_table()
 
