@@ -358,7 +358,10 @@ class ScoreReport(AbstractReportAction):
                                f"a|{default_pg_equality}#*{'{:.2f}'.format(pg_best.execution_time_ms)}*#\n" \
                                f"a|{ratio_color}#*{ratio_x3_str}*#\n" \
                                f"a|{ratio_best_color}#*{best_yb_pg_equality}{ratio_best_x3_str}*#\n"
-                self.content += f"a|[#{yb_query.query_hash}_top]\nlink:tags/{tag}.html#{yb_query.query_hash}[Query {yb_query.query_hash}]\n"
+
+                self.content += f"a|[#{yb_query.query_hash}_top]"
+                self.append_tag_page_link(tag, yb_query.query_hash, f"Query {yb_query.query_hash}")
+
                 self.start_source(["sql"])
                 self.content += format_sql(pg_query.get_reportable_query())
                 self.end_source()
@@ -369,7 +372,7 @@ class ScoreReport(AbstractReportAction):
 
         # different results links
         for tag in self.queries.keys():
-            self.content += f"\nlink:tags/{tag}.html[{tag} queries file]\n"
+            self.append_tag_page_link(tag, None, f"{tag} queries file")
 
         for tag, queries in self.queries.items():
             sub_report = self.create_sub_report(tag)
@@ -577,8 +580,8 @@ class ScoreReport(AbstractReportAction):
         report.content += f"\n[#{yb_query.query_hash}]\n"
         report.content += f"=== Query {yb_query.query_hash}"
         report.content += f"\n{yb_query.tag}\n"
-        report.content += f"\nlink:../index_{self.config.output}.html#top[Go to index]\n"
-        report.content += f"\nlink:../index_{self.config.output}.html#{yb_query.query_hash}_top[Show in summary]\n"
+        report.append_index_page_hashtag_link("top", "Go to index")
+        report.append_index_page_hashtag_link(f"{yb_query.query_hash}_top", "Show in summary")
         report.add_double_newline()
 
         report.start_source(["sql"])

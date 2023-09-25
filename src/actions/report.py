@@ -16,7 +16,7 @@ class ObjectsMixin:
 
     def start_table(self, columns: str = "1"):
         self.content += f"[cols=\"{columns}\"]\n" \
-                       "|===\n"
+                        "|===\n"
 
     def start_table_row(self):
         self.content += "a|"
@@ -51,8 +51,8 @@ class AbstractReportAction(ObjectsMixin):
         self.logger = self.config.logger
 
         self.content = f"= Optimizer {self.get_report_name()} Test Report \n" \
-                      f":source-highlighter: coderay\n" \
-                      f":coderay-linenums-mode: inline\n\n"
+                       f":source-highlighter: coderay\n" \
+                       f":coderay-linenums-mode: inline\n\n"
 
         self.start_collapsible("Reporting configuration")
         self.start_source()
@@ -139,6 +139,10 @@ class AbstractReportAction(ObjectsMixin):
             report_html_path = Path(f'{self.report_folder}/index_{self.config.output}.html')
             self.logger.info(f"Done! Check report at {report_html_path.absolute()}")
 
+    def append_tag_page_link(self, subreport_name: str, hashtag: str | None, readable_name: str):
+        hashtag = "" if hashtag else f"#{hashtag}"
+        self.content += f"\nlink:tags/{subreport_name}.html{hashtag}[{readable_name}]\n"
+
 
 class SubReport(ObjectsMixin):
     def __init__(self, name):
@@ -147,6 +151,9 @@ class SubReport(ObjectsMixin):
 
         self.name = name
         self.content = f"= {name} subreport \n" \
-                      f":source-highlighter: coderay\n" \
-                      f":coderay-linenums-mode: inline\n\n"
+                       f":source-highlighter: coderay\n" \
+                       f":coderay-linenums-mode: inline\n\n"
 
+    def append_index_page_hashtag_link(self, hashtag: str, readable_name: str):
+        hashtag = "" if hashtag else f"#{hashtag}"
+        self.content += f"\nlink:../index_{self.config.output}.html{hashtag}[{readable_name}]\n"
