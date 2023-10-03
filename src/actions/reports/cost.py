@@ -196,46 +196,46 @@ class CostReport(AbstractReportAction):
 
     def build_report(self, dist_chart_specs, xtc_chart_specs, exp_chart_specs):
         def report_one_chart(self, id, spec):
-            self.report += f"=== {id}. {html.escape(spec.title)}\n{spec.description}\n"
+            self.content  += f"=== {id}. {html.escape(spec.title)}\n{spec.description}\n"
             self.report_chart(spec)
 
         id = 0
-        self.report += "\n== Time & Cost <<_boxplot_chart, Distribution Charts>>\n"
+        self.content  += "\n== Time & Cost <<_boxplot_chart, Distribution Charts>>\n"
         for spec in dist_chart_specs:
             report_one_chart(self, id, spec)
             id += 1
 
-        self.report += "\n== <<_time_cost_relationship_charts, Time - Cost Relationship Charts>>\n"
+        self.content  += "\n== <<_time_cost_relationship_charts, Time - Cost Relationship Charts>>\n"
         for spec in xtc_chart_specs:
             report_one_chart(self, id, spec)
             id += 1
 
-        self.report += "\n== Experimental Charts\n"
+        self.content  += "\n== Experimental Charts\n"
         for spec in exp_chart_specs:
             report_one_chart(self, id, spec)
             id += 1
 
-        self.report += "== Chart Descriptions\n"
-        self.report += BOXPLOT_DESCRIPTION
-        self.report += X_TIME_COST_CHART_DESCRIPTION
+        self.content  += "== Chart Descriptions\n"
+        self.content  += BOXPLOT_DESCRIPTION
+        self.content  += X_TIME_COST_CHART_DESCRIPTION
 
     def report_chart_filters(self, spec: ChartSpec):
-        self._start_collapsible("Chart specifications")
-        self._start_source(["python"])
-        self.report += "=== Query Filters ===\n"
+        self.start_collapsible("Chart specifications")
+        self.start_source(["python"])
+        self.content  += "=== Query Filters ===\n"
         for f in spec.query_filter, *spec.xtra_query_filter_list:
-            self.report += inspect.getsource(f)
-        self.report += "=== Node Filters ===\n"
+            self.content  += inspect.getsource(f)
+        self.content  += "=== Node Filters ===\n"
         for f in spec.node_filter, *spec.xtra_node_filter_list:
-            self.report += inspect.getsource(f)
-        self.report += "=== X Axsis Data ===\n"
-        self.report += inspect.getsource(spec.x_getter)
-        self.report += "=== Series Suffix ===\n"
-        self.report += inspect.getsource(spec.series_suffix)
-        self.report += "=== Options ===\n"
-        self.report += str(spec.options)
-        self._end_source()
-        self._end_collapsible()
+            self.content  += inspect.getsource(f)
+        self.content  += "=== X Axsis Data ===\n"
+        self.content  += inspect.getsource(spec.x_getter)
+        self.content  += "=== Series Suffix ===\n"
+        self.content  += inspect.getsource(spec.series_suffix)
+        self.content  += "=== Options ===\n"
+        self.content  += str(spec.options)
+        self.end_source()
+        self.end_collapsible()
 
     def report_queries(self, queries):
         self.start_collapsible(f"Queries ({len(queries)})")
@@ -262,14 +262,14 @@ class CostReport(AbstractReportAction):
             self.content += table_header
             self.end_table_row()
             for x, cost, time_ms, node in data_points:
-                self.report += f">|{x:.3f}\n>|{time_ms:.3f}\n>|{cost:.3f}\n|\n"
-                self._start_source(["sql"], linenums=False)
-                self.report += str(node)
-                self._end_source()
-                self.report += "|\n"
-                self._start_source(["sql"], linenums=False)
-                self.report += cm.get_node_query(node).query
-                self._end_source()
+                self.content  += f">|{x:.3f}\n>|{time_ms:.3f}\n>|{cost:.3f}\n|\n"
+                self.start_source(["sql"], linenums=False)
+                self.content  += str(node)
+                self.end_source()
+                self.content  += "|\n"
+                self.start_source(["sql"], linenums=False)
+                self.content  += cm.get_node_query(node).query
+                self.end_source()
 
             self.end_table()
             self.end_collapsible()
@@ -334,7 +334,7 @@ class CostReport(AbstractReportAction):
     def report_chart(self, spec: ChartSpec):
         self.start_table()
         self.add_image(spec.file_name, '{title},align=\"center\"')
-        self._end_table()
+        self.end_table()
         if spec.is_boxplot():
             self.report_stats(spec)
 
