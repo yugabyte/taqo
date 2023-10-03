@@ -140,7 +140,7 @@ class AbstractReportAction(ObjectsMixin):
             self.logger.info(f"Done! Check report at {report_html_path.absolute()}")
 
     def append_tag_page_link(self, subreport_name: str, hashtag: str | None, readable_name: str):
-        hashtag = "" if hashtag else f"#{hashtag}"
+        hashtag = f"#{hashtag}" if hashtag else ""
         self.content += f"\nlink:tags/{subreport_name}.html{hashtag}[{readable_name}]\n"
 
 
@@ -155,5 +155,5 @@ class SubReport(ObjectsMixin):
                        f":coderay-linenums-mode: inline\n\n"
 
     def append_index_page_hashtag_link(self, hashtag: str, readable_name: str):
-        hashtag = "" if hashtag else f"#{hashtag}"
+        hashtag = f"#{hashtag}" if hashtag else ""
         self.content += f"\nlink:../index_{self.config.output}.html{hashtag}[{readable_name}]\n"
