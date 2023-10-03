@@ -725,8 +725,8 @@ class ScoreReport(AbstractReportAction):
 
             # postgres plan should be red
             report.content += get_plan_diff(
-                pg_query.execution_plan.full_str,
-                yb_query.execution_plan.full_str,
+                pg_query.execution_plan.full_str.replace("|", "\|"),
+                yb_query.execution_plan.full_str.replace("|", "\|"),
             )
             report.end_source()
             report.end_collapsible()
@@ -734,8 +734,8 @@ class ScoreReport(AbstractReportAction):
             report.start_collapsible(f"{best_yb_pg_equality}PG best vs YB best")
             report.start_source(["diff"])
             report.content += get_plan_diff(
-                pg_best.execution_plan.full_str,
-                yb_best.execution_plan.full_str,
+                pg_best.execution_plan.full_str.replace("|", "\|"),
+                yb_best.execution_plan.full_str.replace("|", "\|"),
             )
             report.end_source()
             report.end_collapsible()
@@ -745,24 +745,24 @@ class ScoreReport(AbstractReportAction):
 
         report.start_collapsible("YB default plan")
         report.start_source(["diff"])
-        report.content += yb_query.execution_plan.full_str
+        report.content += yb_query.execution_plan.full_str.replace("|", "\|")
         report.end_source()
         report.end_collapsible()
 
         report.start_collapsible(f"{default_yb_equality}YB best plan")
         report.start_source(["diff"])
-        report.content += yb_best.execution_plan.full_str
+        report.content += yb_best.execution_plan.full_str.replace("|", "\|")
         report.end_source()
         report.end_collapsible()
 
         report.content += f"{default_yb_equality}YB default vs YB best\n"
         report.start_source(["diff"])
         diff = get_plan_diff(
-            yb_query.execution_plan.full_str,
-            yb_best.execution_plan.full_str
+            yb_query.execution_plan.full_str.replace("|", "\|"),
+            yb_best.execution_plan.full_str.replace("|", "\|")
         )
         if not diff:
-            diff = yb_query.execution_plan.full_str
+            diff = yb_query.execution_plan.full_str.replace("|", "\|")
 
         report.content += diff
         report.end_source()
