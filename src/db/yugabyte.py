@@ -49,31 +49,33 @@ def yb_db_factory(config):
 class Yugabyte(Postgres):
     def run_compaction(self, tables: list[str]):
         self.logger.info(f"Evaluating flush on tables {[table.name for table in tables]}")
-        subprocess.call(f'./yb-ts-cli --server_address={self.config.connection.host}:9100 '
-                        f'flush_all_tablets',
-                        shell=True,
-                        cwd=self.config.yugabyte_bin_path)
+        for host in self.config.yugabyte_master_addresses.split(","):
+            subprocess.call(f'./yb-ts-cli --server_address={host}:9100 '
+                            f'flush_all_tablets',
+                            shell=True,
+                            cwd=self.config.yugabyte_bin_path)
 
         self.logger.info("Waiting for 2 minutes to operations to complete")
         sleep(self.config.compaction_timeout)
 
         self.logger.info(f"Evaluating compaction on tables {[table.name for table in tables]}")
-        retries = 1
-        while retries < 5:
-            try:
-                result = subprocess.check_output(
-                    f'./yb-ts-cli --server_address={self.config.connection.host}:9100 '
-                    f'compact_all_tablets',
-                    shell=True,
-                    cwd=self.config.yugabyte_bin_path)
-                self.logger.info(result)
+        for host in self.config.yugabyte_master_addresses.split(","):
+            retries = 1
+            while retries < 5:
+                try:
+                    result = subprocess.check_output(
+                        f'./yb-ts-cli --server_address={host}:9100 '
+                        f'compact_all_tablets',
+                        shell=True,
+                        cwd=self.config.yugabyte_bin_path)
+                    self.logger.info(result)
 
-                break
-            except Exception as e:
-                retries += 1
+                    break
+                except Exception as e:
+                    retries += 1
 
-                self.logger.info(f"Waiting for 10 minutes to operations to complete for {table.name}")
-                sleep(self.config.compaction_timeout)
+                    self.logger.info(f"Waiting for 10 minutes to operations to complete for {table.name}")
+                    sleep(self.config.compaction_timeout)
 
     def establish_connection_from_output(self, out: str):
         self.logger.info("Reinitializing connection based on cluster creation output")
