@@ -505,15 +505,11 @@ class PostgresExecutionPlan(ExecutionPlan):
                     node.nloops = match.group('loops')
             else:
                 break
-            
-            # print("1")
 
             for prop in node_props[1:]:
                 if prop.startswith(' '):
                     prop_str = prop.strip()
-                    print(prop_str)
                     if match := hash_property_decomposition_pattern.search(prop_str):
-                        # print("matched")
                         node.properties['Hash Buckets'] = match.group('buckets')
 
                         if orig_buckets := match.group('orig_buckets'):
@@ -535,7 +531,6 @@ class PostgresExecutionPlan(ExecutionPlan):
                         if actual_nexts := match.group('actual_nexts'):
                             node.properties['actual_nexts'] = actual_nexts
                     else:
-                        print("UMM...")
                         if (keylen := prop_str.find(':')) > 0:
                             pkey = prop_str[:keylen]
                             pval = prop_str[keylen + 1:].strip()
@@ -545,8 +540,6 @@ class PostgresExecutionPlan(ExecutionPlan):
                                 pval = pval.replace(f'{node.table_alias or node.table_name}.', '')
 
                             node.properties[pkey] = pval
-
-            # print(f"{node.name}, {node.properties['estimated_seeks'] or 0}, {node.properties['estimated_nexts'] or 0}, {node.properties['actual_seeks'] or 0}, {node.properties['actual_nexts'] or 0}")
             
             if not current_path:
                 current_path.append(node)
