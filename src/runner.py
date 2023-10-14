@@ -10,6 +10,7 @@ from actions.reports.cost import CostReport
 from actions.reports.regression import RegressionReport
 from actions.reports.score import ScoreReport
 from actions.reports.selectivity import SelectivityReport
+from actions.reports.seek_next_estimates import SeekNextEstimatesReport
 from actions.reports.taqo import TaqoReport
 from actions.collect import CollectAction
 
@@ -381,5 +382,9 @@ if __name__ == "__main__":
         elif args.type == "cost":
             yb_queries = loader.get_queries_from_previous_result(args.results)
             CostReport.generate_report(yb_queries, args.interactive)
+            
+        elif args.type == "seek_next":
+            yb_queries = loader.get_queries_from_previous_result(args.results)
+            SeekNextEstimatesReport.generate_report(yb_queries)
         else:
             raise AttributeError(f"Unknown test type defined {config.test}")

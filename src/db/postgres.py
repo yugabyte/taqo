@@ -58,10 +58,14 @@ node_name_decomposition_pattern = re.compile(''.join([
     r'(?: using (?P<index>\S+))*'
     r' on (?:(?P<schema>\S+)\.)*(?P<table>\S+)(?: (?P<alias>\S+))*']))
 
-hash_property_decomposition_pattern = re.compile(''.join([
+hash_property_decomposition_pattern = re.compile('|'.join([
     r'Buckets: (?P<buckets>\d+)(?: originally (?P<orig_buckets>\d+))*  ',
     r'Batches: (?P<batches>\d+)(?: originally (?P<orig_batches>\d+))*  ',
     r'Memory Usage: (?P<peak_mem>\d+)kB',
+    r'Estimated Seeks: (?P<estimated_seeks>\d+)',
+    r'Estimated Nexts: (?P<estimated_nexts>\d+)',
+    r'Metric rocksdb_number_db_seek: (?P<actual_seeks>\d+)\.000',
+    r'Metric rocksdb_number_db_next: (?P<actual_nexts>\d+)\.000',
 ]))
 
 PG_DISABLE_COST = 10000000000.00
@@ -501,11 +505,15 @@ class PostgresExecutionPlan(ExecutionPlan):
                     node.nloops = match.group('loops')
             else:
                 break
+            
+            # print("1")
 
             for prop in node_props[1:]:
                 if prop.startswith(' '):
                     prop_str = prop.strip()
+                    print(prop_str)
                     if match := hash_property_decomposition_pattern.search(prop_str):
+                        # print("matched")
                         node.properties['Hash Buckets'] = match.group('buckets')
 
                         if orig_buckets := match.group('orig_buckets'):
@@ -517,7 +525,17 @@ class PostgresExecutionPlan(ExecutionPlan):
                             node.properties['Original Hash Batches'] = orig_batches
 
                         node.properties['Peak Memory Usage'] = match.group('peak_mem')
+                        
+                        if estimated_seeks := match.group('estimated_seeks'):
+                            node.properties['estimated_seeks'] = estimated_seeks
+                        if estimated_nexts := match.group('estimated_nexts'):
+                            node.properties['estimated_nexts'] = estimated_nexts
+                        if actual_seeks := match.group('actual_seeks'):
+                            node.properties['actual_seeks'] = actual_seeks
+                        if actual_nexts := match.group('actual_nexts'):
+                            node.properties['actual_nexts'] = actual_nexts
                     else:
+                        print("UMM...")
                         if (keylen := prop_str.find(':')) > 0:
                             pkey = prop_str[:keylen]
                             pval = prop_str[keylen + 1:].strip()
@@ -528,6 +546,8 @@ class PostgresExecutionPlan(ExecutionPlan):
 
                             node.properties[pkey] = pval
 
+            # print(f"{node.name}, {node.properties['estimated_seeks'] or 0}, {node.properties['estimated_nexts'] or 0}, {node.properties['actual_seeks'] or 0}, {node.properties['actual_nexts'] or 0}")
+            
             if not current_path:
                 current_path.append(node)
             else:
