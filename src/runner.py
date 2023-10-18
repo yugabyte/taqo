@@ -362,6 +362,7 @@ if __name__ == "__main__":
                 args.pg_results) if args.pg_results else None
 
             ScoreReport.generate_report(yb_queries, pg_queries)
+            SeekNextEstimatesReport.generate_report(yb_queries)
         elif args.type == "regression":
             v1_queries = loader.get_queries_from_previous_result(args.v1_results)
             v2_queries = loader.get_queries_from_previous_result(args.v2_results)
