@@ -88,3 +88,5 @@ class PgUnitGenerator:
         for model_query in teardown_queries:
             result_file.write(self.add_semicolon(model_query))
             result_file.write("\n")
+            
+        result_file.write("\n")
