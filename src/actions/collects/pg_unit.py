@@ -22,13 +22,14 @@ class PgUnitGenerator:
     @staticmethod
     def wrap_query_plan(plan: str):
         num_rows = len(plan.split("\n"))
+        num_rows_unit = "row" if num_rows == 1 else "rows"
         max_length = max(len(line) for line in plan.split("\n")) + 2
         plan = "\n".join([f" {row}" for row in plan.split("\n")])
 
         return f"""{' ' * int(max_length / 2 - 5)}QUERY PLAN
 {('-' * max_length)}
 {plan}
-({num_rows} rows)
+({num_rows} {num_rows_unit})
 
 """
 
