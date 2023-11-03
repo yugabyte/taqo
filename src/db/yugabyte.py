@@ -57,8 +57,21 @@ class Yugabyte(Postgres):
                             shell=True,
                             cwd=self.config.yugabyte_bin_path)
 
+        # Flush sys catalog tables
+        subprocess.call(f'./yb-admin -init_master_addrs {self.config.connection.host}:7100 '
+                        f'flush_sys_catalog',
+                        shell=True,
+                        cwd=self.config.yugabyte_bin_path)
+
         self.logger.info("Waiting for 2 minutes to operations to complete")
         sleep(self.config.compaction_timeout)
+
+        self.logger.info(f"Evaluating compaction on system tables")
+        # Compact sys catalog tables
+        subprocess.call(f'./yb-admin -init_master_addrs {self.config.connection.host}:7100 '
+                        f'compact_sys_catalog',
+                        shell=True,
+                        cwd=self.config.yugabyte_bin_path)
 
         self.logger.info(f"Evaluating compaction on tables {[table.name for table in tables_to_optimize]}")
         for table in tables_to_optimize:
@@ -71,7 +84,6 @@ class Yugabyte(Postgres):
                         shell=True,
                         cwd=self.config.yugabyte_bin_path)
                     self.logger.info(result)
-
                     break
                 except Exception as e:
                     retries += 1
