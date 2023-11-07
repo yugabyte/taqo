@@ -7,7 +7,7 @@ from actions.collects.pg_unit import PgUnitGenerator
 from config import Config, DDLStep
 from models.factory import get_test_model
 from objects import EXPLAIN, ExplainFlags
-from utils import evaluate_sql, calculate_avg_execution_time, get_md5
+from utils import evaluate_sql, calculate_avg_execution_time, get_md5, query_has_set
 
 
 class CollectAction:
@@ -99,42 +99,47 @@ class CollectAction:
         for original_query in queries:
             with conn.cursor() as cur:
                 try:
-                    self.logger.info(
-                        f"Evaluating query with hash {original_query.query_hash} [{counter}/{len(queries)}]")
-                    self.sut_database.set_query_timeout(cur, self.config.test_query_timeout)
-
-                    # get default execution plan
-                    self.sut_database.prepare_query_execution(cur)
-                    evaluate_sql(cur, original_query.get_explain(EXPLAIN))
-                    default_execution_plan = self.config.database.get_execution_plan(
-                        '\n'.join(str(item[0]) for item in cur.fetchall()))
-                    conn.rollback()
-
-                    # store default execution plan if query execution will fail
-                    original_query.execution_plan = default_execution_plan
-
-                    # get costs off execution plan
-                    self.sut_database.prepare_query_execution(cur)
-                    evaluate_sql(cur, original_query.get_explain(EXPLAIN, [ExplainFlags.COSTS_OFF]))
-                    original_query.cost_off_explain = self.config.database.get_execution_plan(
-                        '\n'.join(str(item[0]) for item in cur.fetchall()))
-                    conn.rollback()
-
-                    self.define_min_execution_time(conn, cur, original_query)
-
-                    if self.config.plans_only:
-                        original_query.execution_time_ms = default_execution_plan.get_estimated_cost()
+                    query_str_lower = original_query.query.lower()
+                    if query_has_set(query_str_lower):
+                        self.logger.info(f"{query_str_lower}")
+                        evaluate_sql(cur, query_str_lower)
                     else:
-                        query_str = original_query.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
-                            if self.config.server_side_execution else None
-                        calculate_avg_execution_time(cur, original_query, self.sut_database,
-                                                     query_str=query_str,
-                                                     num_retries=int(self.config.num_retries),
-                                                     connection=conn)
+                        self.logger.info(
+                            f"Evaluating query with hash {original_query.query_hash} [{counter}/{len(queries)}]")
+                        self.sut_database.set_query_timeout(cur, self.config.test_query_timeout)
 
-                    if evaluate_optimizations and "dml" not in original_query.optimizer_tips.tags:
-                        self.logger.debug("Evaluating optimizations...")
-                        self.evaluate_optimizations(conn, cur, original_query)
+                        # get default execution plan
+                        self.sut_database.prepare_query_execution(cur)
+                        evaluate_sql(cur, original_query.get_explain(EXPLAIN))
+                        default_execution_plan = self.config.database.get_execution_plan(
+                            '\n'.join(str(item[0]) for item in cur.fetchall()))
+                        conn.rollback()
+
+                        # store default execution plan if query execution will fail
+                        original_query.execution_plan = default_execution_plan
+
+                        # get costs off execution plan
+                        self.sut_database.prepare_query_execution(cur)
+                        evaluate_sql(cur, original_query.get_explain(EXPLAIN, [ExplainFlags.COSTS_OFF]))
+                        original_query.cost_off_explain = self.config.database.get_execution_plan(
+                            '\n'.join(str(item[0]) for item in cur.fetchall()))
+                        conn.rollback()
+
+                        self.define_min_execution_time(conn, cur, original_query)
+
+                        if self.config.plans_only:
+                            original_query.execution_time_ms = default_execution_plan.get_estimated_cost()
+                        else:
+                            query_str = original_query.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
+                                if self.config.server_side_execution else None
+                            calculate_avg_execution_time(cur, original_query, self.sut_database,
+                                                        query_str=query_str,
+                                                        num_retries=int(self.config.num_retries),
+                                                        connection=conn)
+
+                        if evaluate_optimizations and "dml" not in original_query.optimizer_tips.tags:
+                            self.logger.debug("Evaluating optimizations...")
+                            self.evaluate_optimizations(conn, cur, original_query)
 
                 except psycopg2.Error as pe:
                     # do not raise exception

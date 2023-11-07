@@ -164,6 +164,10 @@ def query_with_analyze(query_str_lower):
         ("analyze" in query_str_lower or "analyse" in query_str_lower)
 
 
+def query_has_set(query_str_lower):
+    return "set" in query_str_lower
+
+
 def query_is_dml(query_str_lower):
     return "update" in query_str_lower or \
         "insert" in query_str_lower or \

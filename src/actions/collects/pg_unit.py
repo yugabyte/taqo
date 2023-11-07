@@ -4,7 +4,7 @@ from inspect import cleandoc
 from config import Config
 from db.yugabyte import ENABLE_STATISTICS_HINT
 from objects import ExplainFlags, EXPLAIN
-from utils import parse_clear_and_parametrized_sql
+from utils import parse_clear_and_parametrized_sql, query_has_set
 
 
 class PgUnitGenerator:
@@ -75,16 +75,20 @@ class PgUnitGenerator:
             result_file.write("\n")
 
         for query in queries:
-            best_found = " , !BEST_PLAN_FOUND" if not query.compare_plans(query.get_best_optimization(self.config).execution_plan) else ""
+            query_str_lower = query.query.lower()
+            if query_has_set(query_str_lower):
+                result_file.write(f"{query.query};\n")
+            else:
+                best_found = " , !BEST_PLAN_FOUND" if not query.compare_plans(query.get_best_optimization(self.config).execution_plan) else ""
 
-            result_file.write(f"-- Query Hash: {query.query_hash}{best_found}\n")
-            _, _, clean_query = parse_clear_and_parametrized_sql(query.get_explain(EXPLAIN, options=[ExplainFlags.COSTS_OFF]))
-            result_file.write(cleandoc(self.add_semicolon(clean_query)))
+                result_file.write(f"-- Query Hash: {query.query_hash}{best_found}\n")
+                _, _, clean_query = parse_clear_and_parametrized_sql(query.get_explain(EXPLAIN, options=[ExplainFlags.COSTS_OFF]))
+                result_file.write(cleandoc(self.add_semicolon(clean_query)))
 
-            result_file.write("\n")
+                result_file.write("\n")
 
-            if with_output:
-                result_file.write(self.wrap_query_plan(query.cost_off_explain.full_str))
+                if with_output:
+                    result_file.write(self.wrap_query_plan(query.cost_off_explain.full_str))
 
         for model_query in teardown_queries:
             result_file.write(self.add_semicolon(model_query))
