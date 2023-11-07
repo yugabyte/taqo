@@ -96,13 +96,13 @@ class CollectAction:
 
     def evaluate_testing_queries(self, conn, queries, evaluate_optimizations):
         counter = 1
-        for original_query in queries:
-            with conn.cursor() as cur:
+        with conn.cursor() as cur:
+            for original_query in queries:
                 try:
                     query_str_lower = original_query.query.lower()
                     if query_has_set(query_str_lower):
                         self.logger.info(f"{query_str_lower}")
-                        evaluate_sql(cur, query_str_lower)
+                        evaluate_sql(cur, f"{query_str_lower};")
                     else:
                         self.logger.info(
                             f"Evaluating query with hash {original_query.query_hash} [{counter}/{len(queries)}]")
