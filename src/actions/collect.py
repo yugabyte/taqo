@@ -113,7 +113,7 @@ class CollectAction:
                         evaluate_sql(cur, original_query.get_explain(EXPLAIN))
                         default_execution_plan = self.config.database.get_execution_plan(
                             '\n'.join(str(item[0]) for item in cur.fetchall()))
-                        conn.rollback()
+                        # conn.rollback()
 
                         # store default execution plan if query execution will fail
                         original_query.execution_plan = default_execution_plan
@@ -123,7 +123,7 @@ class CollectAction:
                         evaluate_sql(cur, original_query.get_explain(EXPLAIN, [ExplainFlags.COSTS_OFF]))
                         original_query.cost_off_explain = self.config.database.get_execution_plan(
                             '\n'.join(str(item[0]) for item in cur.fetchall()))
-                        conn.rollback()
+                        # conn.rollback()
 
                         self.define_min_execution_time(conn, cur, original_query)
 
