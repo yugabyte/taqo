@@ -127,7 +127,7 @@ def calculate_avg_execution_time(cur,
             traceback.print_exc(limit=None, file=None, chain=True)
             return False
         finally:
-            connection.rollback()
+            # connection.rollback()
 
             if iteration >= num_warmup:
                 actual_evaluations += 1
