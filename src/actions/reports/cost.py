@@ -366,7 +366,7 @@ class CostReport(AbstractReportAction):
                     report.content += opt.execution_plan.full_str
                     report.end_source()
             except Exception as e:
-                self.logger.info += f"== Query {query.query_hash}\n\n"
+                self.logger.info(query.query_hash)
                 self.logger.info(format_sql(query.get_reportable_query()))
 
     @staticmethod
