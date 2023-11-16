@@ -343,30 +343,42 @@ class CostReport(AbstractReportAction):
     @staticmethod
     def report_all_plans(report: SubReport, queries: Iterable[Query]):
         for query in queries:
-            report.content += f"\n[#{query.query_hash}]\n"
-            report.content += f"== Query {query.query_hash}\n\n"
-            report.append_index_page_hashtag_link("top", "Go to index")
-            report.append_index_page_hashtag_link(f"{query.query_hash}_top", "Show in summary")
-            report.add_double_newline()
+            try:
+                report.content += f"\n[#{query.query_hash}]\n"
+                report.content += f"== Query {query.query_hash}\n\n"
+                report.append_index_page_hashtag_link("top", "Go to index")
+                report.append_index_page_hashtag_link(f"{query.query_hash}_top", "Show in summary")
+                report.add_double_newline()
 
-            report.start_source(["sql"])
-            report.content += format_sql(query.get_reportable_query())
-            report.end_source()
-
-            report.content += '=== No hint\n'
-            report.start_source(["diff"])
-            report.content += query.execution_plan.full_str
-            report.end_source()
-
-            for opt in query.optimizations:
-                if not opt.execution_plan:
-                    continue
-                anchor = query.query_hash + CostReport.make_name(opt.explain_hints)
-                report.content += f"\n[#{anchor}]\n"
-                report.content += f'=== Hints: [`{opt.explain_hints}`]\n'
-                report.start_source(["diff"])
-                report.content += opt.execution_plan.full_str
+                report.start_source(["sql"])
+                report.content += format_sql(query.get_reportable_query())
                 report.end_source()
+
+                report.content += '=== No hint\n'
+                report.start_source(["diff"])
+                report.content += query.execution_plan.full_str
+                report.end_source()
+
+                for opt in query.optimizations:
+                    if not opt.execution_plan:
+                        continue
+                    anchor = query.query_hash + CostReport.make_name(opt.explain_hints)
+                    report.content += f"\n[#{anchor}]\n"
+                    report.content += f'=== Hints: [`{opt.explain_hints}`]\n'
+                    report.start_source(["diff"])
+                    report.content += opt.execution_plan.full_str
+                    report.end_source()
+            except Exception as e:
+                report.content += f"== Query {query.query_hash}\n\n"
+                report.append_index_page_hashtag_link("top", "Go to index")
+                report.append_index_page_hashtag_link(f"{query.query_hash}_top", "Show in summary")
+                report.add_double_newline()
+
+                report.start_source(["sql"])
+                report.content += format_sql(query.get_reportable_query())
+                report.end_source()
+
+                report.content += f'EXECUTION ERROR: {str(e)}\n'
 
     @staticmethod
     def get_series_color(series_label):
