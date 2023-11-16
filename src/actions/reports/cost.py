@@ -17,9 +17,7 @@ from actions.reports.cost_metrics import CostMetrics
 from actions.reports.cost_chart_specs import (CostChartSpecs, ChartGroup, ChartSpec,
                                               DataPoint, PlotType)
 
-
 IMAGE_FILE_SUFFIX = '.svg'
-
 
 BOXPLOT_DESCRIPTION = (
     '=== Boxplot Chart\n'
@@ -340,8 +338,7 @@ class CostReport(AbstractReportAction):
                 self.content += '\n\n'
             self.end_collapsible()
 
-    @staticmethod
-    def report_all_plans(report: SubReport, queries: Iterable[Query]):
+    def report_all_plans(self, report: SubReport, queries: Iterable[Query]):
         for query in queries:
             try:
                 report.content += f"\n[#{query.query_hash}]\n"
@@ -369,16 +366,8 @@ class CostReport(AbstractReportAction):
                     report.content += opt.execution_plan.full_str
                     report.end_source()
             except Exception as e:
-                report.content += f"== Query {query.query_hash}\n\n"
-                report.append_index_page_hashtag_link("top", "Go to index")
-                report.append_index_page_hashtag_link(f"{query.query_hash}_top", "Show in summary")
-                report.add_double_newline()
-
-                report.start_source(["sql"])
-                report.content += format_sql(query.get_reportable_query())
-                report.end_source()
-
-                report.content += f'EXECUTION ERROR: {str(e)}\n'
+                self.logger.info += f"== Query {query.query_hash}\n\n"
+                self.logger.info(format_sql(query.get_reportable_query()))
 
     @staticmethod
     def get_series_color(series_label):
@@ -448,8 +437,8 @@ class CostReport(AbstractReportAction):
         for spec in specs:
             for i, (series_label, data_points) in enumerate(sorted(spec.series_data.items())):
                 fmt = self.get_series_color(series_label)
-                fmt += marker_style[(i+3) % len(marker_style)]
-                fmt += line_style[(i+5) % len(line_style)]
+                fmt += marker_style[(i + 3) % len(marker_style)]
+                fmt += line_style[(i + 5) % len(line_style)]
                 spec.series_format[series_label] = fmt
 
             plotters[spec.plotter](self, spec)
@@ -458,12 +447,12 @@ class CostReport(AbstractReportAction):
         choices = '\n'.join([f'{n}: {s.title}' for n, s in enumerate(chart_specs)])
         while True:
             try:
-                response = int(input(f'{choices}\n[0-{len(chart_specs)-1}] --> '))
+                response = int(input(f'{choices}\n[0-{len(chart_specs) - 1}] --> '))
                 if response < 0 or response >= len(chart_specs):
                     raise ValueError
                 break
             except ValueError:
-                print(f"*** Enter a number in range [0..{len(chart_specs)-1}] ***")
+                print(f"*** Enter a number in range [0..{len(chart_specs) - 1}] ***")
                 response = -1
         return [chart_specs[int(response)]]
 
@@ -561,7 +550,7 @@ class CostReport(AbstractReportAction):
             if spec.series_data:
                 # show the legend on the last subplot
                 axs[-1].legend(fontsize='xx-small',
-                               ncols=int((len(spec.series_data.keys())+39)/40.0))
+                               ncols=int((len(spec.series_data.keys()) + 39) / 40.0))
 
             spec.file_name = self.make_file_name('-'.join([title, xlabel]))
             plt.savefig(self.get_image_location() + spec.file_name,
@@ -634,7 +623,7 @@ class CostReport(AbstractReportAction):
         (event_x, event_y) = (event.x, event.y)
         maxd = 10  # pixel radius from the pick event point
 
-        d = np.sqrt((x - event_x)**2 + (y - event_y)**2)
+        d = np.sqrt((x - event_x) ** 2 + (y - event_y) ** 2)
         # print(f'line={line}\n' \
         #       f'x={x}\ny={y}\n' \
         #       f'event_x={event_x} event_y={event_y}\n' \
@@ -674,7 +663,7 @@ class CostReport(AbstractReportAction):
                 ]))
 
             ann.xy = event.artist.get_xydata()[event.ind][0]
-            ann.xyann = ((event.axx - 0.5)*(-200) - 120, (event.axy - 0.5)*(-200) + 40)
+            ann.xyann = ((event.axx - 0.5) * (-200) - 120, (event.axy - 0.5) * (-200) + 40)
 
             ann.set_visible(True)
             fig.canvas.draw_idle()
