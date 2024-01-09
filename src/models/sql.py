@@ -82,9 +82,7 @@ class SQLModel(QTFModel):
                                 if cleaned := query.lstrip():
                                     model_queries.append(cleaned)
                                     if do_execute:
-                                        if step_prefix == DDLStep.IMPORT:
-                                            self.import_from_local(cur, cleaned)
-                                        else:
+                                        if not self.import_from_local(cur, cleaned):
                                             evaluate_sql(cur, cleaned)
                             except psycopg2.Error as e:
                                 self.logger.exception(e)
@@ -98,12 +96,18 @@ class SQLModel(QTFModel):
             self.logger.exception(e)
             raise e
 
-    def import_from_local(self, cur, cleaned):
+    @staticmethod
+    def import_from_local(cur, cleaned):
         copy_re = r"(?i)\bCOPY\b\s(.+)\s\bFROM\b\s\'(.*)\'\s\bWITH\b\s\((.*\,?)\)"
-        parse_re = re.findall(copy_re, cleaned, re.MULTILINE)[0]
-        table_name = parse_re[0]
-        local_path = parse_re[1]
-        params = parse_re[2]
+        parse_command = re.findall(copy_re, cleaned, re.MULTILINE)
+
+        if not parse_command:
+            return False
+
+        parsed_cmd = parse_command[0]
+        table_name = parsed_cmd[0]
+        local_path = parsed_cmd[1]
+        params = parsed_cmd[2]
 
         delimiter = ","
         file_format = None
@@ -124,6 +128,8 @@ class SQLModel(QTFModel):
             cur.copy_from(csv_file, table_name,
                           sep=delimiter,
                           null=null_format)
+
+        return True
 
     def load_tables_from_public(self, cur):
         catalog_schema = ", 'pg_catalog'" if self.config.load_catalog_tables else ""
