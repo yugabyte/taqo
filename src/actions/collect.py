@@ -136,6 +136,12 @@ class CollectAction:
                         self.logger.debug("Evaluating optimizations...")
                         self.evaluate_optimizations(conn, cur, original_query)
 
+                        default_hash = original_query.query_hash
+                        for optimization in original_query.optimizations:
+                            if optimization.query_hash and default_hash != optimization.query_hash:
+                                self.logger.exception(f"INCONSISTENT RESULTS!\n"
+                                                      f"optimization_hints:{optimization.explain_hints}")
+
                 except psycopg2.Error as pe:
                     # do not raise exception
                     self.logger.exception(f"{original_query}\nFailed because of {pe}")
