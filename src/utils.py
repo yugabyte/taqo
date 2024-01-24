@@ -64,7 +64,7 @@ def calculate_avg_execution_time(cur,
 
     query_str = query_str or query.get_query()
     query_str_lower = query_str.lower() if query_str is not None else None
-    has_order_by = True if "order by" in query_str else False
+    has_order_by = True if "order by" in query_str_lower else False
 
     with_analyze = query_with_analyze(query_str_lower)
     is_dml = query_is_dml(query_str_lower)
