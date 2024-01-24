@@ -410,3 +410,9 @@ def get_plan_diff(baseline, changed):
     return "\n".join(
         text for text in difflib.unified_diff(baseline.split("\n"), changed.split("\n")) if
         text[:3] not in ('+++', '---', '@@ '))
+
+
+def seconds_to_readable_minutes(seconds):
+    minutes = seconds // 60
+    remaining_seconds = seconds % 60
+    return f"{minutes} minute{'s' if minutes != 1 else ''} and {remaining_seconds:.2f} second{'s' if remaining_seconds != 1 else ''}"
