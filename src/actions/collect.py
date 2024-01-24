@@ -136,9 +136,9 @@ class CollectAction:
                         self.logger.debug("Evaluating optimizations...")
                         self.evaluate_optimizations(conn, cur, original_query)
 
-                        default_hash = original_query.query_hash
+                        result_hash = original_query.result_hash
                         for optimization in original_query.optimizations:
-                            if optimization.query_hash and default_hash != optimization.query_hash:
+                            if optimization.result_hash and result_hash != optimization.result_hash:
                                 self.logger.exception(f"INCONSISTENT RESULTS!\n"
                                                       f"optimization_hints:{optimization.explain_hints}")
 
