@@ -154,11 +154,16 @@ class CollectAction:
         for optimization in original_query.optimizations:
             if optimization.result_hash and result_hash != optimization.result_hash:
                 cardinality_equality = "=" if original_query.result_cardinality == optimization.result_cardinality else "!="
+
+                self.config.has_failures = True
                 self.logger.exception(f"INCONSISTENT RESULTS!\n"
                                       f"validation: {original_query.result_hash} != {optimization.result_hash}\n"
                                       f"cardinality: {original_query.result_cardinality} {cardinality_equality} {optimization.result_cardinality}\n"
                                       f"reproduce original: {original_query.query}\n"
                                       f"reproduce optimization: /*+ {optimization.explain_hints} */ {optimization.query}\n")
+
+                if self.config.exit_on_fail:
+                    exit(1)
 
     def define_min_execution_time(self, conn, cur, original_query):
         if self.config.baseline_results:
