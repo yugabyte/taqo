@@ -238,7 +238,7 @@ if __name__ == "__main__":
                         help='Clear logs directory')
     parser.add_argument('--exit-on-fail',
                         action=argparse.BooleanOptionalAction,
-                        default=False,
+                        default=True,
                         help='Exit on query failures (DDL failure is not configurable)')
 
     parser.add_argument('--yes',
