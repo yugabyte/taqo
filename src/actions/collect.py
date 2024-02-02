@@ -157,7 +157,7 @@ class CollectAction:
                 self.logger.exception(f"INCONSISTENT RESULTS!\n"
                                       f"validation: {original_query.result_hash} != {optimization.result_hash}\n"
                                       f"cardinality: {original_query.result_cardinality} {cardinality_equality} {optimization.result_cardinality}\n"
-                                      f"reproduce original: /*+ {original_query.explain_hints} */ {original_query.query}\n"
+                                      f"reproduce original: {original_query.query}\n"
                                       f"reproduce optimization: /*+ {optimization.explain_hints} */ {optimization.query}\n")
 
     def define_min_execution_time(self, conn, cur, original_query):
