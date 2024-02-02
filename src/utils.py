@@ -318,6 +318,9 @@ def evaluate_sql(cur: cursor, sql: str):
         except psycopg2.errors.QueryCanceled as e:
             cur.connection.rollback()
             raise e
+        except psycopg2.errors.DuplicateDatabase as ddb:
+            cur.connection.rollback()
+            config.logger.exception(sql, ddb)
         except psycopg2.errors.ConfigurationLimitExceeded as cle:
             cur.connection.rollback()
             config.logger.exception(sql, cle)
@@ -345,6 +348,9 @@ def evaluate_sql(cur: cursor, sql: str):
         except psycopg2.errors.QueryCanceled as e:
             cur.connection.rollback()
             raise e
+        except psycopg2.errors.DuplicateDatabase as ddb:
+            cur.connection.rollback()
+            config.logger.exception(sql, ddb)
         except psycopg2.errors.ConfigurationLimitExceeded as cle:
             cur.connection.rollback()
             config.logger.exception(sql, cle)

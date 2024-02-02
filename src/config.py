@@ -57,7 +57,7 @@ class ConnectionConfig:
 class Config(metaclass=Singleton):
     logger: logging.Logger = None
 
-    exit_on_fail: bool = False
+    exit_on_fail: bool = True
     has_failures: bool = False
 
     database: Database = None
@@ -113,7 +113,7 @@ class Config(metaclass=Singleton):
     clear: bool = False
 
     def __str__(self):
-        skipped_fields = ['logger', 'database', 'baseline_results', 'has_failures']
+        skipped_fields = ['logger', 'database', 'baseline_results', 'has_failures', 'exit_on_fail']
 
         self_dict = copy(vars(self))
         for field in skipped_fields:
