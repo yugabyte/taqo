@@ -317,10 +317,6 @@ def evaluate_sql(cur: cursor, sql: str):
             cur.execute(sql, parameters)
         except psycopg2.errors.QueryCanceled as e:
             cur.connection.rollback()
-
-            if config.exit_on_fail:
-                exit(1)
-
             raise e
         except psycopg2.errors.ConfigurationLimitExceeded as cle:
             cur.connection.rollback()
@@ -348,10 +344,6 @@ def evaluate_sql(cur: cursor, sql: str):
             cur.execute(sql_wo_parameters)
         except psycopg2.errors.QueryCanceled as e:
             cur.connection.rollback()
-
-            if config.exit_on_fail:
-                exit(1)
-
             raise e
         except psycopg2.errors.ConfigurationLimitExceeded as cle:
             cur.connection.rollback()
