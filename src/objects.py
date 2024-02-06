@@ -64,7 +64,7 @@ class Table:
 
 @dataclasses.dataclass
 class ExecutionPlan:
-    full_str: str
+    full_str: str = ""
 
     def get_estimated_cost(self):
         pass

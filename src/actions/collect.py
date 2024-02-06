@@ -177,6 +177,7 @@ class CollectAction:
 
         if (avg_execution_time > warmup_execution_time and
                 not allowed_diff(self.config, avg_execution_time, warmup_execution_time)):
+            self.config.has_warnings = True
             self.logger.warning(f"WARNING!\n"
                                 f"Non ANALYZE query execution time is too big:\n"
                                 f"Execution times (warmup vs avg): {warmup_execution_time} < {avg_execution_time}\n"

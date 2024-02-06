@@ -401,3 +401,5 @@ if __name__ == "__main__":
         if config.has_failures:
             config.logger.exception("Found issues during TAQO collect execution")
             exit(1)
+        if config.has_warnings:
+            exit(42)
