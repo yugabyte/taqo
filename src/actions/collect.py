@@ -7,7 +7,7 @@ from actions.collects.pg_unit import PgUnitGenerator
 from config import Config, DDLStep
 from models.factory import get_test_model
 from objects import EXPLAIN, ExplainFlags
-from utils import evaluate_sql, calculate_avg_execution_time, get_md5
+from utils import evaluate_sql, calculate_avg_execution_time, get_md5, allowed_diff
 
 
 class CollectAction:
@@ -137,6 +137,7 @@ class CollectAction:
                         self.evaluate_optimizations(conn, cur, original_query)
 
                         self.validate_result_hash(original_query)
+                        self.validate_execution_time(original_query)
 
                 except psycopg2.Error as pe:
                     # do not raise exception
@@ -157,13 +158,23 @@ class CollectAction:
 
                 self.config.has_failures = True
                 self.logger.exception(f"INCONSISTENT RESULTS!\n"
-                                      f"validation: {original_query.result_hash} != {optimization.result_hash}\n"
-                                      f"cardinality: {original_query.result_cardinality} {cardinality_equality} {optimization.result_cardinality}\n"
-                                      f"reproduce original: {original_query.query}\n"
-                                      f"reproduce optimization: /*+ {optimization.explain_hints} */ {optimization.query}\n")
+                                      f"Validation: {original_query.result_hash} != {optimization.result_hash}\n"
+                                      f"Cardinality: {original_query.result_cardinality} {cardinality_equality} {optimization.result_cardinality}\n"
+                                      f"Reproducer original: {original_query.query}\n"
+                                      f"Reproducer optimization: /*+ {optimization.explain_hints} */ {optimization.query}\n")
 
                 if self.config.exit_on_fail:
                     exit(1)
+    def validate_execution_time(self, original_query):
+        warmup_execution_time = original_query.execution_time_warmup
+        avg_execution_time = original_query.execution_time_ms
+
+        if (avg_execution_time > warmup_execution_time and
+                not allowed_diff(self.config, avg_execution_time, warmup_execution_time)):
+            self.logger.warning(f"WARNING!\n"
+                                f"Non ANALYZE query execution time is too big:\n"
+                                f"Execution times (warmup vs avg): {warmup_execution_time} < {avg_execution_time}"
+                                f"Query: {original_query.query}")
 
     def define_min_execution_time(self, conn, cur, original_query):
         if self.config.baseline_results:

@@ -87,13 +87,17 @@ def calculate_avg_execution_time(cur,
 
             sut_database.prepare_query_execution(cur, query)
 
-            if iteration == 0:
+            if iteration in (0, 1):
                 # evaluate test query without analyze and collect result hash
                 # using first iteration as a result collecting step
                 # even if EXPLAIN ANALYZE is explain query
-                query.parameters = evaluate_sql(cur, query.get_query())
+                start_time = current_milli_time()
 
+                query.parameters = evaluate_sql(cur, query.get_query())
                 cardinality, result = get_result(cur, is_dml, has_order_by)
+
+                # iteration == 1 will be calculated
+                query.execution_time_warmup = current_milli_time() - start_time
 
                 query.result_cardinality = cardinality
                 query.result_hash = get_md5(result)

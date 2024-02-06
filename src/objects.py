@@ -116,6 +116,7 @@ class Query:
     cost_off_explain: 'ExecutionPlan' = None
 
     execution_plan: 'ExecutionPlan' = None
+    execution_time_warmup: float = 0
     execution_time_ms: float = 0
     result_cardinality: int = 0
     result_hash: str = None
