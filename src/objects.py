@@ -128,7 +128,6 @@ class Query:
     cost_off_explain: 'ExecutionPlan' = dataclasses.field(default_factory=ExecutionPlan)
 
     execution_plan: 'ExecutionPlan' = dataclasses.field(default_factory=ExecutionPlan)
-    execution_time_warmup: float = 0
     execution_time_ms: float = 0
     result_cardinality: int = 0
     result_hash: str = None

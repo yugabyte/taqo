@@ -7,7 +7,7 @@ from actions.collects.pg_unit import PgUnitGenerator
 from config import Config, DDLStep
 from models.factory import get_test_model
 from objects import EXPLAIN, ExplainFlags
-from utils import evaluate_sql, calculate_avg_execution_time, get_md5, allowed_diff
+from utils import evaluate_sql, calculate_avg_execution_time, get_md5, allowed_diff, extract_execution_time_from_analyze
 
 
 class CollectAction:
@@ -172,15 +172,15 @@ class CollectAction:
                     exit(1)
 
     def validate_execution_time(self, original_query):
-        warmup_execution_time = original_query.execution_time_warmup
+        explain_execution_time = extract_execution_time_from_analyze(original_query.execution_plan)
         avg_execution_time = original_query.execution_time_ms
 
-        if (avg_execution_time > warmup_execution_time and
-                not allowed_diff(self.config, avg_execution_time, warmup_execution_time)):
+        if explain_execution_time and (explain_execution_time > avg_execution_time and
+                not allowed_diff(self.config, avg_execution_time, explain_execution_time)):
             self.config.has_warnings = True
             self.logger.warning(f"WARNING!\n"
-                                f"Non ANALYZE query execution time is too big:\n"
-                                f"Execution times (warmup vs avg): {warmup_execution_time} < {avg_execution_time}\n"
+                                f"ANALYZE query execution time is too large:\n"
+                                f"Execution times (explain vs avg): {explain_execution_time} < {avg_execution_time}\n"
                                 f"Query: {original_query.query}\n")
 
     def define_min_execution_time(self, conn, cur, original_query):
