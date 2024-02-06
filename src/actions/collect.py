@@ -170,6 +170,7 @@ class CollectAction:
 
                 if self.config.exit_on_fail:
                     exit(1)
+
     def validate_execution_time(self, original_query):
         warmup_execution_time = original_query.execution_time_warmup
         avg_execution_time = original_query.execution_time_ms
