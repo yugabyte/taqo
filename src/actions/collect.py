@@ -173,7 +173,7 @@ class CollectAction:
                     exit(1)
 
     def validate_execution_time(self, original_query):
-        explain_execution_time = extract_execution_time_from_analyze(original_query.execution_plan)
+        explain_execution_time = extract_execution_time_from_analyze(original_query.execution_plan.full_str)
         avg_execution_time = original_query.execution_time_ms
 
         if explain_execution_time and (explain_execution_time > avg_execution_time and
