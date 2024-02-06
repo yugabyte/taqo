@@ -173,8 +173,8 @@ class CollectAction:
                 not allowed_diff(self.config, avg_execution_time, warmup_execution_time)):
             self.logger.warning(f"WARNING!\n"
                                 f"Non ANALYZE query execution time is too big:\n"
-                                f"Execution times (warmup vs avg): {warmup_execution_time} < {avg_execution_time}"
-                                f"Query: {original_query.query}")
+                                f"Execution times (warmup vs avg): {warmup_execution_time} < {avg_execution_time}\n"
+                                f"Query: {original_query.query}\n")
 
     def define_min_execution_time(self, conn, cur, original_query):
         if self.config.baseline_results:
