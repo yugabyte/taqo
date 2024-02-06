@@ -136,8 +136,9 @@ class CollectAction:
                         self.logger.debug("Evaluating optimizations...")
                         self.evaluate_optimizations(conn, cur, original_query)
 
-                        self.validate_result_hash(original_query)
-                        self.validate_execution_time(original_query)
+                        if not self.config.plans_only:
+                            self.validate_result_hash(original_query)
+                            self.validate_execution_time(original_query)
 
                 except psycopg2.Error as pe:
                     # do not raise exception
