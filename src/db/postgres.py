@@ -287,7 +287,13 @@ class PostgresQuery(Query):
 
     def compare_plans(self, execution_plan: Type['ExecutionPlan']):
         if self.execution_plan:
-            return self.execution_plan.get_clean_plan() == self.execution_plan.get_clean_plan(execution_plan)
+            return self.execution_plan.get_no_cost_plan() == self.execution_plan.get_clean_plan(execution_plan)
+        else:
+            return False
+
+    def compare_cost_off(self, other_query: Type['PostgresQuery']):
+        if self.execution_plan:
+            return self.cost_off_explain.get_clean_plan() == other_query.cost_off_explain.get_clean_plan()
         else:
             return False
 
@@ -333,7 +339,8 @@ class PostgresQuery(Query):
             for optimization in self.optimizations:
                 best_execution_time = best_optimization.execution_time_ms \
                     if best_optimization.execution_time_ms != -1 else 99999999
-                if 0 < optimization.execution_time_ms < best_execution_time:
+                if 0 < optimization.execution_time_ms < best_execution_time and \
+                    not self.compare_cost_off(optimization):
                     best_optimization = optimization
 
             if allowed_diff(config, best_optimization.execution_time_ms, self.execution_time_ms):

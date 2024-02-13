@@ -230,8 +230,6 @@ class CollectAction:
             if self.config.look_near_best_plan or len(original_query.optimizations) == 1:
                 self.set_query_timeout_based_on_previous_execution(cur, min_execution_time, original_query)
 
-            self.try_to_get_default_explain_hints(cur, optimization, original_query)
-
             # check that execution plan is unique
             evaluate_sql(cur, optimization.get_explain(EXPLAIN, options=[ExplainFlags.COSTS_OFF]))
             optimization.cost_off_explain = database.get_execution_plan(
@@ -284,17 +282,8 @@ class CollectAction:
             f"{int(min_execution_time / 1000) + int(self.config.skip_timeout_delta)}"
         self.sut_database.set_query_timeout(cur, optimizer_query_timeout)
 
-    def try_to_get_default_explain_hints(self, cur, optimization, original_query):
+    @staticmethod
+    def try_to_get_default_explain_hints(optimization, original_query):
         if not original_query.explain_hints:
-            if optimization.execution_plan is None:
-                evaluate_sql(cur, optimization.get_explain(EXPLAIN))
-
-                execution_plan = self.config.database.get_execution_plan('\n'.join(
-                    str(item[0]) for item in cur.fetchall()))
-            else:
-                execution_plan = optimization.execution_plan
-
-            if original_query.compare_plans(execution_plan) and original_query.tips_looks_fair(
-                    optimization):
-                # store execution plan hints from optimization
+            if original_query.compare_cost_off(optimization):
                 original_query.explain_hints = optimization.explain_hints
