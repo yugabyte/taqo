@@ -151,6 +151,8 @@ class Yugabyte(Postgres):
 
             return revision, version
 
+        return 'UNKNOWN', 'UNKNOWN'
+
     def collect_query_statistics(self, cur: cursor, query: Query, query_str: str):
         try:
             tuned_query = query_str.replace("'", "''")
