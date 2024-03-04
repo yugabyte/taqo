@@ -148,8 +148,8 @@ class Yugabyte(Postgres):
                                       re.MULTILINE)
 
             if model_result:
-                version = f"{model_result[1]}-b{model_result[2]}"
-                revision = model_result[3]
+                version = f"{model_result[0][1]}-b{model_result[0][2]}"
+                revision = model_result[0][3]
 
                 return revision, version
         except Exception:
