@@ -141,15 +141,19 @@ class Yugabyte(Postgres):
         evaluate_sql(cur, "SELECT pg_stat_statements_reset()")
 
     def get_revision_version(self, cur: cursor):
-        model_result = re.findall(VERSION,
-                                  requests.get(f'http://{self.config.connection.host}:7000/tablet-servers').text,
-                                  re.MULTILINE)
+        model_result = ""
+        try:
+            model_result = re.findall(VERSION,
+                                      requests.get(f'http://{self.config.connection.host}:7000/tablet-servers').text,
+                                      re.MULTILINE)
 
-        if model_result:
-            version = f"{model_result[1]}-b{model_result[2]}"
-            revision = model_result[3]
+            if model_result:
+                version = f"{model_result[1]}-b{model_result[2]}"
+                revision = model_result[3]
 
-            return revision, version
+                return revision, version
+        except Exception:
+            self.logger.error(model_result)
 
         return 'UNKNOWN', 'UNKNOWN'
 
