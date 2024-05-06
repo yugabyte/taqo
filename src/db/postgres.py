@@ -304,7 +304,7 @@ class PostgresQuery(Query):
         return f"{self.get_debug_hints()}{self.query}"
 
     def tips_looks_fair(self, optimization):
-        clean_plan = self.cost_off_explain if self.cost_off_explain else self.execution_plan.get_clean_plan()
+        clean_plan = self.cost_off_explain.full_str if self.cost_off_explain else self.execution_plan.get_clean_plan()
 
         return not any((join.value[0] in optimization.explain_hints and join.value[1] not in clean_plan
                         for join in Joins)
