@@ -159,10 +159,10 @@ class Connection:
 
 
 class Scans(Enum):
-    SEQ = "SeqScan"
-    INDEX = "IndexScan"
-    INDEX_ONLY = "IndexOnlyScan"
-    BITMAP = "BitmapScan"
+    SEQ = "SeqScan", "Seq Scan"
+    INDEX = "IndexScan", "Index Scan"
+    INDEX_ONLY = "IndexOnlyScan", "Index Only Scan"
+    BITMAP = "BitmapScan", "Bitmap"
 
 
 class Joins(Enum):
@@ -302,6 +302,15 @@ class PostgresQuery(Query):
 
     def get_query(self):
         return f"{self.get_debug_hints()}{self.query}"
+
+    def tips_looks_fair(self, optimization):
+        clean_plan = self.cost_off_explain if self.cost_off_explain else self.execution_plan.get_clean_plan()
+
+        return not any((join.value[0] in optimization.explain_hints and join.value[1] not in clean_plan
+                        for join in Joins)
+                       and
+                       (scans.value[0] in optimization.explain_hints and scans.value[1] not in clean_plan
+                        for scans in Scans))
 
     def compare_plans(self, query: Type['Query']):
         if (self.cost_off_explain and self.cost_off_explain.is_present() and
