@@ -1,6 +1,5 @@
 import dataclasses
 import itertools
-import requests
 import re
 from difflib import SequenceMatcher
 from enum import Enum
@@ -107,13 +106,13 @@ class Postgres(Database):
         except Exception as e:
             self.logger.exception(f"Failed to close testing database connection {e}")
 
-        self.establish_connection("postgres")
-        conn = self.connection.conn
-        try:
-            with conn.cursor() as cur:
-                evaluate_sql(cur, f'DROP DATABASE {self.config.connection.database};')
-        except Exception as e:
-            self.logger.exception(f"Failed to drop testing database {e}")
+        # self.establish_connection("postgres")
+        # conn = self.connection.conn
+        # try:
+        #     with conn.cursor() as cur:
+        #         evaluate_sql(cur, f'DROP DATABASE {self.config.connection.database};')
+        # except Exception as e:
+        #     self.logger.exception(f"Failed to drop testing database {e}")
 
     def set_query_timeout(self, cur, timeout):
         self.logger.debug(f"Setting statement timeout to {timeout} seconds")
@@ -256,10 +255,10 @@ class Leading:
     def get_table_scan_hints(self):
         table_scan_hints = []
         for table in self.tables:
-            tables_and_idxs = {f"{Scans.SEQ.value}({table.alias})",
-                               f"{Scans.BITMAP.value}({table.alias})",
-                               f"{Scans.INDEX.value}({table.alias})",
-                               f"{Scans.INDEX_ONLY.value}({table.alias})"}
+            tables_and_idxs = {f"{Scans.SEQ.value[0]}({table.alias})",
+                               f"{Scans.BITMAP.value[0]}({table.alias})",
+                               f"{Scans.INDEX.value[0]}({table.alias})",
+                               f"{Scans.INDEX_ONLY.value[0]}({table.alias})"}
 
             if self.config.all_index_check:
                 indexes = []
@@ -268,21 +267,21 @@ class Leading:
                         indexes += field.indexes
 
                 tables_and_idxs |= {
-                    f"{Scans.INDEX.value}({table.alias} {index})"
+                    f"{Scans.INDEX.value[0]}({table.alias} {index})"
                     for index in indexes
                 }
                 tables_and_idxs |= {
-                    f"{Scans.INDEX_ONLY.value}({table.alias} {index})"
+                    f"{Scans.INDEX_ONLY.value[0]}({table.alias} {index})"
                     for index in indexes
                 }
             else:
                 tables_and_idxs |= {
-                    f"{Scans.INDEX.value}({table.alias})"
+                    f"{Scans.INDEX.value[0]}({table.alias})"
                     for field in table.fields
                     if field.is_index
                 }
                 tables_and_idxs |= {
-                    f"{Scans.INDEX_ONLY.value}({table.alias})"
+                    f"{Scans.INDEX_ONLY.value[0]}({table.alias})"
                     for field in table.fields
                     if field.is_index
                 }
@@ -303,14 +302,12 @@ class PostgresQuery(Query):
     def get_query(self):
         return f"{self.get_debug_hints()}{self.query}"
 
-    def tips_looks_fair(self, optimization):
+    def tips_looks_fair(self):
         clean_plan = self.cost_off_explain.full_str if self.cost_off_explain else self.execution_plan.get_clean_plan()
 
-        return not any((join.value[0] in optimization.explain_hints and join.value[1] not in clean_plan
-                        for join in Joins)
+        return not any((join.value[0] in self.explain_hints and join.value[1] not in clean_plan for join in Joins)
                        and
-                       (scans.value[0] in optimization.explain_hints and scans.value[1] not in clean_plan
-                        for scans in Scans))
+                       (scans.value[0] in self.explain_hints and scans.value[1] not in clean_plan for scans in Scans))
 
     def compare_plans(self, query: Type['Query']):
         if (self.cost_off_explain and self.cost_off_explain.is_present() and

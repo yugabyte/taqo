@@ -300,5 +300,5 @@ class CollectAction:
     @staticmethod
     def try_to_get_default_explain_hints(optimization, original_query):
         if not original_query.explain_hints:
-            if original_query.compare_plans(optimization) and original_query.tips_looks_fair(optimization):
+            if original_query.compare_plans(optimization) and optimization.tips_looks_fair():
                 original_query.explain_hints = optimization.explain_hints
