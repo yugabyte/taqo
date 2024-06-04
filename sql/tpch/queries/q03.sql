@@ -8,11 +8,11 @@ FROM
     orders,
     lineitem
 WHERE
-    c_mktsegment = 'Segment 1'
+    c_mktsegment = 'BUILDING'
   AND c_custkey = o_custkey
   AND l_orderkey = o_orderkey
-  AND o_orderdate < DATE '2024-05-01'
-  AND l_shipdate > DATE '2024-05-01'
+  AND o_orderdate < DATE '1995-03-15'
+  AND l_shipdate > DATE '1995-03-15'
 GROUP BY
     l_orderkey,
     o_orderdate,

@@ -5,5 +5,5 @@ SELECT 100.00 * SUM(CASE
 FROM lineitem,
      part
 WHERE l_partkey = p_partkey
-  AND l_shipdate >= DATE '2023-01-01'
-  AND l_shipdate < DATE '2024-01-01';
+  AND l_shipdate >= DATE '1995-09-01'
+  AND l_shipdate < DATE '1995-09-01';

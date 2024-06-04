@@ -12,8 +12,8 @@ WHERE c_custkey = o_custkey
   AND c_nationkey = s_nationkey
   AND s_nationkey = n_nationkey
   AND n_regionkey = r_regionkey
-  AND r_name = 'Europe'
-  AND o_orderdate >= DATE '2023-01-01'
-  AND o_orderdate < DATE '2024-01-01'
+  AND r_name = 'ASIA'
+  AND o_orderdate >= DATE '1994-01-01'
+  AND o_orderdate < DATE '1994-01-01'
 GROUP BY n_name
 ORDER BY revenue DESC;

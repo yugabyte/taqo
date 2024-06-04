@@ -1,27 +1,26 @@
-SELECT c_custkey,
+select c_custkey,
        c_name,
-       SUM(l_extendedprice * (1 - l_discount)) AS revenue,
+       sum(l_extendedprice * (1 - l_discount)) as revenue,
        c_acctbal,
        n_name,
        c_address,
        c_phone,
        c_comment
-FROM customer,
+from customer,
      orders,
      lineitem,
      nation
-WHERE c_custkey = o_custkey
-  AND l_orderkey = o_orderkey
-  AND o_orderdate >= DATE '2023-01-01'
-  AND o_orderdate < DATE '2024-01-01'
-  AND l_returnflag = 'R'
-  AND c_nationkey = n_nationkey
-GROUP BY c_custkey,
+where c_custkey = o_custkey
+  and l_orderkey = o_orderkey
+  and o_orderdate >= date '1993-10-01'
+  and o_orderdate < date '1993-10-01' + interval '3' month
+  and l_returnflag = 'R'
+  and c_nationkey = n_nationkey
+group by c_custkey,
          c_name,
          c_acctbal,
          c_phone,
          n_name,
          c_address,
          c_comment
-ORDER BY revenue DESC
-LIMIT 20;
+order by revenue desc;

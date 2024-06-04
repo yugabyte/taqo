@@ -11,8 +11,8 @@ WHERE s_suppkey IN (SELECT ps_suppkey
                                          FROM lineitem
                                          WHERE l_partkey = ps_partkey
                                            AND l_suppkey = ps_suppkey
-                                           AND l_shipdate >= DATE '2023-01-01'
-                                           AND l_shipdate < DATE '2024-01-01'))
+                                           AND l_shipdate >= DATE '1994-01-01'
+                                           AND l_shipdate < DATE '1994-01-01'))
   AND s_nationkey = n_nationkey
-  AND n_name = 'Nation 1'
+  AND n_name = 'CANADA'
 ORDER BY s_name;

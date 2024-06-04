@@ -12,7 +12,7 @@ SELECT
 FROM
     lineitem
 WHERE
-    l_shipdate <= DATE '2024-01-01' - INTERVAL '90' DAY
+    l_shipdate <= DATE '1998-12-01' - INTERVAL '90' DAY
 GROUP BY
     l_returnflag,
     l_linestatus
