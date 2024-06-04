@@ -23,4 +23,5 @@ group by c_custkey,
          n_name,
          c_address,
          c_comment
-order by revenue desc;
+order by revenue desc
+LIMIT 20;
