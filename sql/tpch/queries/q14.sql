@@ -6,4 +6,4 @@ FROM lineitem,
      part
 WHERE l_partkey = p_partkey
   AND l_shipdate >= DATE '1995-09-01'
-  AND l_shipdate < DATE '1995-09-01';
+  AND l_shipdate < DATE '1995-09-01' + interval '1' month;
