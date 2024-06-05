@@ -12,7 +12,7 @@ WHERE s_suppkey IN (SELECT ps_suppkey
                                          WHERE l_partkey = ps_partkey
                                            AND l_suppkey = ps_suppkey
                                            AND l_shipdate >= DATE '1994-01-01'
-                                           AND l_shipdate < DATE '1994-01-01') + interval '1' year)
+                                           AND l_shipdate < DATE '1994-01-01' + interval '1' year))
   AND s_nationkey = n_nationkey
   AND n_name = 'CANADA'
 ORDER BY s_name;
