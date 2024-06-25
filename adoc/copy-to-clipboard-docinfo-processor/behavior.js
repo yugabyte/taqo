@@ -34,7 +34,8 @@
     }
     ;(toolbox = document.createElement('div')).className = 'source-toolbox'
     if (lang) toolbox.appendChild(lang)
-    if (supportsCopy) {
+    // TODO not the best solution?
+    // if (supportsCopy) {
       ;(copy = document.createElement('button')).className = 'copy-button'
       copy.setAttribute('title', 'Copy to clipboard')
       if (svgAs === 'svg') {
@@ -55,7 +56,7 @@
       toast.appendChild(document.createTextNode('Copied!'))
       copy.appendChild(toast)
       toolbox.appendChild(copy)
-    }
+    // }
     pre.parentNode.appendChild(toolbox)
     if (copy) copy.addEventListener('click', writeToClipboard.bind(copy, code))
   })
