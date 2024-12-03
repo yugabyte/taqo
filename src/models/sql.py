@@ -311,7 +311,9 @@ class SQLModel(QTFModel):
                 full_queries = self.apply_variables(''.join(query_file.readlines()))
                 query_tips = self.get_query_hint_tips(full_queries)
                 query_debug_queries = []
-                for file_query in full_queries.split(";"):
+
+                unique_queries = set()
+                for file_query in sqlparse.split(full_queries):
                     if cleaned := sqlparse.format(file_query.lstrip(), strip_comments=True).strip():
                         if cleaned.lower().startswith("set "):
                             query_debug_queries.append(cleaned)
@@ -319,12 +321,19 @@ class SQLModel(QTFModel):
                             current_tips = query_tips.copy()
                             current_debug_queries = query_debug_queries.copy()
                             current_tips.debug_queries = current_debug_queries
+                            query_hash = get_md5(cleaned)
+
+                            if query_hash in unique_queries:
+                                # add md5 sum of query plus debug queries in case of similar queries
+                                query_hash = get_md5(query_debug_queries + cleaned)
+                            else:
+                                unique_queries.add(get_md5(cleaned))
 
                             tables_in_query = get_alias_table_names(cleaned, tables)
                             queries.append(PostgresQuery(
                                 tag=os.path.basename(query).replace(".sql", ""),
                                 query=cleaned,
-                                query_hash=get_md5(cleaned),
+                                query_hash=query_hash,
                                 has_order_by=find_order_by_in_query(cleaned),
                                 tables=tables_in_query,
                                 optimizer_tips=current_tips))
