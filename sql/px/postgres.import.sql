@@ -23,7 +23,8 @@ insert into tmp3
          i % (1000000 / 4) + 1 as v from generate_series(1, 1000000) i;
 
 insert into t1m
-  select row_number() over (), tmp1.v, tmp2.v, tmp3.v
+  select row_number() over (), tmp1.v, tmp2.v, tmp3.v,
+      lpad(sha512((tmp1.v#tmp2.v#tmp3.v)::bpchar::bytea)::bpchar, 1024, '-')
   from tmp1 join tmp2 using (id) join tmp3 using(id);
 
 
@@ -43,8 +44,8 @@ insert into tmp3
          i % (10000000 / 4) + 1 as v from generate_series(1, 10000000) i;
 
 insert into t10m
-  select row_number() over (), tmp1.v, tmp2.v, tmp3.v
+  select row_number() over (), tmp1.v, tmp2.v, tmp3.v,
+      lpad(sha512((tmp1.v#tmp2.v#tmp3.v)::bpchar::bytea)::bpchar, 512, '-')
   from tmp1 join tmp2 using (id) join tmp3 using(id);
-
 
 drop table tmp1, tmp2, tmp3;

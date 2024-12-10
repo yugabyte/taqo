@@ -34,7 +34,8 @@ insert into tmp3
   IndexOnlyScan(tmp3)
 */
 insert into t1m
-  select row_number() over (), tmp1.v, tmp2.v, tmp3.v
+  select row_number() over (), tmp1.v, tmp2.v, tmp3.v,
+      lpad(sha512((tmp1.v#tmp2.v#tmp3.v)::bpchar::bytea)::bpchar, 1024, '-')
   from tmp1 join tmp2 using (id) join tmp3 using(id);
 
 
@@ -65,7 +66,8 @@ insert into tmp3
   IndexOnlyScan(tmp3)
 */
 insert into t10m
-  select row_number() over (), tmp1.v, tmp2.v, tmp3.v
+  select row_number() over (), tmp1.v, tmp2.v, tmp3.v,
+      lpad(sha512((tmp1.v#tmp2.v#tmp3.v)::bpchar::bytea)::bpchar, 512, '-')
   from tmp1 join tmp2 using (id) join tmp3 using(id);
 
 drop table tmp1, tmp2, tmp3;
