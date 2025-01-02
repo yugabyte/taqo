@@ -147,6 +147,10 @@ if __name__ == "__main__":
     parser.add_argument('--ddl-prefix',
                         default="",
                         help='DDL file prefix (default empty, might be postgres)')
+
+    parser.add_argument('--user-optimization-queries',
+                        default="",
+                        help='Additional user defined queries to multiply optimizations number. (E.g. enable parallel)')
     parser.add_argument('--remote-data-path',
                         default=None,
                         help='Path to remote data files ($DATA_PATH/*.csv)')
@@ -320,6 +324,7 @@ if __name__ == "__main__":
         output=args.output,
         ddls=ddls,
         remote_data_path=args.remote_data_path,
+        user_optimization_queries=args.user_optimization_queries.split(","),
         ddl_prefix=args.ddl_prefix or (args.db if args.db != "yugabyte" else ""),
         with_optimizations=args.optimizations,
         plans_only=args.plans_only,
