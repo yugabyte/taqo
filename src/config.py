@@ -81,7 +81,7 @@ class Config(metaclass=Singleton):
     explain_clause: str = ""
     server_side_execution: bool = False
     session_props: List[str] = None
-    user_optimization_queries: List[str] = None
+    user_optimization_guc: List[str] = None
 
     test: str = None
     model: str = None

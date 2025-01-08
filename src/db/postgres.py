@@ -674,9 +674,9 @@ class PGListOfOptimizations(ListOfOptimizations):
             for table_scan_hint in self.leading.table_scan_hints:
                 self.add_optimization(f"{' '.join(table_scan_hint)}", optimizations)
 
-        if self.config.user_optimization_queries:
+        if self.config.user_optimization_guc:
             additional_optimizations = []
-            for user_optimization in self.config.user_optimization_queries:
+            for user_optimization in self.config.user_optimization_guc:
                 for optimization in optimizations:
                     new_optimization = optimization.create_copy()
                     new_tips = optimization.optimizer_tips.copy()
