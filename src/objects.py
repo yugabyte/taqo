@@ -172,7 +172,7 @@ class Query:
         return self
 
     def get_reportable_query(self):
-        return self.query.replace("|", "\|")
+        return self.query.replace("|", "\|").replace("''","'")
 
     def get_inconsistent_results(self):
         pass
