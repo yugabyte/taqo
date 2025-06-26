@@ -230,7 +230,7 @@ class SQLModel(QTFModel):
                 ns.oid = c.relnamespace
                 and c.relkind = 'r'
                 and ns.nspname in ('public'{catalog_schema})
-                and c.relname =any(array{list(tmap)});
+                and c.relname =any(array{list(tmap)}::name[]);
                  """
         )
 
@@ -256,7 +256,7 @@ class SQLModel(QTFModel):
                 c.relkind = 'r'
                 and a.attnum > 0
                 and ns.nspname in ('public'{catalog_schema})
-                and c.relname =any(array{list(tmap)});
+                and c.relname =any(array{list(tmap)}::name[]);
                  """
         )
 

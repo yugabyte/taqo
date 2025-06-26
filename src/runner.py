@@ -39,11 +39,13 @@ def parse_model_config(model):
         global_option_index = get_bool_from_object(configuration.get("all-index-check", True))
         global_option_timeout = configuration.get("test-query-timeout", 1200)
         global_compaction_timeout = configuration.get("compaction-timeout", 120)
+        global_option_bitmap = configuration.get("bitmap-enabled", False)
 
         configuration['all-index-check'] = global_option_index and parsed_model_config.get("all-index-check", True)
         configuration['load-catalog-tables'] = parsed_model_config.get("load-catalog-tables", False)
         configuration['test-query-timeout'] = parsed_model_config.get("test-query-timeout", global_option_timeout)
         configuration['compaction-timeout'] = parsed_model_config.get("compaction-timeout", global_compaction_timeout)
+        configuration['bitmap-enabled'] = parsed_model_config.get("bitmap-enabled", global_option_bitmap)
 
 
 def define_database_name(args):
@@ -161,7 +163,7 @@ if __name__ == "__main__":
                         help='Collect only execution plans, execution time will be equal to cost')
     parser.add_argument('--bitmap-enabled',
                         action=argparse.BooleanOptionalAction,
-                        default=False,
+                        default=None,
                         help='Enable bitmap scan for PG and YB databases')
     parser.add_argument('--optimizations',
                         action=argparse.BooleanOptionalAction,
@@ -315,7 +317,7 @@ if __name__ == "__main__":
         allow_destroy_db=args.allow_destroy_db,
         clean_build=args.clean_build,
         colocated_database=args.colocated,
-        bitmap_enabled=args.bitmap_enabled,
+        bitmap_enabled=configuration.get("bitmap-enabled", False) if args.bitmap_enabled is None else args.bitmap_enabled,
         yugabyte_bin_path=args.yugabyte_bin_path or configuration.get("yugabyte-bin-path", None),
         yugabyte_master_addresses=args.yugabyte_master_addresses if args.yugabyte_master_addresses else args.host,
         yugabyte_collect_stats=args.yugabyte_stats,
