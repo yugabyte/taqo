@@ -1,0 +1,2 @@
+ANALYZE tbl;
+ANALYZE tbl2;

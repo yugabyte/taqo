@@ -1,0 +1,13 @@
+CREATE TABLE t_10M_colocated(k1 INT, v1 INT, PRIMARY KEY (k1 ASC)) WITH (COLOCATION=true);
+CREATE INDEX t_10M_colocated_index ON t_10M_colocated (v1 ASC);
+INSERT INTO t_10M_colocated (SELECT s, s FROM generate_series(1, 10000000) s);
+
+CREATE TABLE t_10M_hash(k1 INT, v1 INT, PRIMARY KEY (k1 HASH)) WITH (COLOCATION=false) SPLIT INTO 3 TABLETS;
+CREATE INDEX t_10M_hash_hash_index ON t_10M_hash (v1 HASH) SPLIT INTO 3 TABLETS;
+CREATE INDEX t_10M_hash_asc_index ON t_10M_hash (v1 ASC) SPLIT AT VALUES ((333333), (666666));
+INSERT INTO t_10M_hash (SELECT s, s FROM generate_series(1, 10000000) s);
+
+CREATE TABLE t_10M_asc(k1 INT, v1 INT, PRIMARY KEY (k1 ASC)) WITH (COLOCATION=false) SPLIT AT VALUES ((333333), (666666));
+CREATE INDEX t_10M_asc_hash_index ON t_10M_hash (v1 HASH) SPLIT INTO 3 TABLETS;
+CREATE INDEX t_10M_asc_index ON t_10M_asc (v1 ASC) SPLIT AT VALUES ((333333), (666666));
+INSERT INTO t_10M_asc (SELECT s, s FROM generate_series(1, 10000000) s);

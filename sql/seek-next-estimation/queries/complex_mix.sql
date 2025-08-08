@@ -1,0 +1,10 @@
+SELECT * FROM t4 WHERE k1 = 4 and k2 IN (4, 8, 12, 16);
+SELECT * FROM t4 WHERE k1 IN (4, 8, 12, 16) and k2 = 4;
+SELECT * FROM t4 WHERE k3 IN (4, 8, 12, 16) and k4 = 4;
+SELECT * FROM t2 WHERE k1 >= 4 and k1 < 5 and k2 IN (4, 8, 12, 16);
+SELECT * FROM t2 WHERE k1 >= 4 and k1 < 6 and k2 IN (4, 8, 12, 16);
+SELECT * FROM t2 WHERE k1 >= 4 and k1 < 14 and k2 IN (4, 8, 12, 16);
+SELECT * FROM t3 WHERE k1 >= 4 and k1 < 7 and k3 IN (4, 8, 12, 16);
+SELECT * FROM t4 WHERE k2 >= 4 and k2 < 7 and k4 IN (4, 8, 12);
+SELECT * FROM t5 WHERE k2 >= 4 and k2 < 7 and k4 IN (4, 8, 12);
+SELECT * FROM t5 WHERE k2 IN (4,8,12,16) and k3 <= 4 and k3 > 7 and k4 IN (4, 8, 12);
