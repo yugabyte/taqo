@@ -1,0 +1,9 @@
+select * from t_range_1m_4keys where k2 > 18 and k3 > 25;
+select * from t_range_1m_4keys where k2 > 16 and k3 > 25;
+select * from t_range_1m_4keys where k2 > 14 and k3 > 25;
+select * from t_range_1m_4keys where k2 > 12 and k3 > 25;
+select * from t_range_1m_4keys where k2 > 10 and k3 > 25;
+select * from t_range_1m_4keys where k2 > 8 and k3 > 25;
+select * from t_range_1m_4keys where k2 > 6 and k3 > 25;
+select * from t_range_1m_4keys where k2 > 4 and k3 > 25;
+select * from t_range_1m_4keys where k2 > 2 and k3 > 25;

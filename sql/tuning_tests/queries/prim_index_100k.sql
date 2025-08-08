@@ -1,0 +1,15 @@
+SELECT * FROM t_range_100k where id > 0;
+SELECT * FROM t_range_100k where id > 1;
+SELECT * FROM t_range_100k where id > 10;
+SELECT * FROM t_range_100k where id > 100;
+SELECT * FROM t_range_100k where id > 1000;
+SELECT * FROM t_range_100k where id > 10000;
+SELECT * FROM t_range_100k where id > 20000;
+SELECT * FROM t_range_100k where id > 30000;
+SELECT * FROM t_range_100k where id > 40000;
+SELECT * FROM t_range_100k where id > 50000;
+SELECT * FROM t_range_100k where id > 60000;
+SELECT * FROM t_range_100k where id > 70000;
+SELECT * FROM t_range_100k where id > 80000;
+SELECT * FROM t_range_100k where id > 90000;
+SELECT * FROM t_range_100k where id > 100000;

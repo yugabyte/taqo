@@ -1,0 +1,10 @@
+select * from t_range_100k order by id limit 2000;
+select * from t_range_100k order by id limit 4000;
+select * from t_range_100k order by id limit 6000;
+select * from t_range_100k order by id limit 8000;
+select * from t_range_100k order by id limit 10000;
+select * from t_range_100k order by id limit 12000;
+select * from t_range_100k order by id limit 14000;
+select * from t_range_100k order by id limit 16000;
+select * from t_range_100k order by id limit 18000;
+select * from t_range_100k order by id limit 20000;

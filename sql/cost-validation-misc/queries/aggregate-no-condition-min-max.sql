@@ -1,0 +1,43 @@
+-- Possible min/max optimization using index
+
+select min(c3) from t100;
+select min(c3) from t1000;
+select min(c3) from t10000;
+select min(c3) from t100000;
+select min(c3) from t100000w;
+select min(c3), min(c4) from t100;
+select min(c3), min(c4) from t1000;
+select min(c3), min(c4) from t10000;
+select min(c3), min(c4) from t100000;
+select min(c3), min(c4) from t100000w;
+select min(c2), min(c3), min(c4) from t100;
+select min(c2), min(c3), min(c4) from t1000;
+select min(c2), min(c3), min(c4) from t10000;
+select min(c2), min(c3), min(c4) from t100000;
+select min(c2), min(c3), min(c4) from t100000w;
+select min(c1), min(c2), min(c3), min(c4) from t100;
+select min(c1), min(c2), min(c3), min(c4) from t1000;
+select min(c1), min(c2), min(c3), min(c4) from t10000;
+select min(c1), min(c2), min(c3), min(c4) from t100000;
+select min(c1), min(c2), min(c3), min(c4) from t100000w;
+
+select max(c3) from t100;
+select max(c3) from t1000;
+select max(c3) from t10000;
+select max(c3) from t100000;
+select max(c3) from t100000w;
+select max(c3), max(c4) from t100;
+select max(c3), max(c4) from t1000;
+select max(c3), max(c4) from t10000;
+select max(c3), max(c4) from t100000;
+select max(c3), max(c4) from t100000w;
+select max(c2), max(c3), max(c4) from t100;
+select max(c2), max(c3), max(c4) from t1000;
+select max(c2), max(c3), max(c4) from t10000;
+select max(c2), max(c3), max(c4) from t100000;
+select max(c2), max(c3), max(c4) from t100000w;
+select max(c1), max(c2), max(c3), max(c4) from t100;
+select max(c1), max(c2), max(c3), max(c4) from t1000;
+select max(c1), max(c2), max(c3), max(c4) from t10000;
+select max(c1), max(c2), max(c3), max(c4) from t100000;
+select max(c1), max(c2), max(c3), max(c4) from t100000w;
