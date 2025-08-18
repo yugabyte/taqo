@@ -58,8 +58,9 @@ class CollectAction:
 
             loq.config = str(self.config)
 
-            self.logger.info(f"Storing results to report/{self.config.output}")
-            loader.store_queries_to_file(loq, self.config.output)
+            if loq.queries:
+                self.logger.info(f"Storing results to report/{self.config.output}")
+                loader.store_queries_to_file(loq, self.config.output)
         except Exception as e:
             self.logger.exception(e)
             raise e

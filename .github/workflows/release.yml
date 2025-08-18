@@ -1,14 +1,18 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g., 1.2.3 or 1.2.3-rc1)"
+        required: true
+        type: string
 
 jobs:
   build-release:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,21 +27,17 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-      - name: Compute version
+      - name: Set version
         id: ver
         run: |
-          # Use tag without leading 'v' if present
-          ref="${GITHUB_REF##*/}"
-          echo "ref=$ref" >> $GITHUB_OUTPUT
-          ver=${ref#v}
-          echo "version=$ver" >> $GITHUB_OUTPUT
+          echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
 
       - name: Build release artifacts
         run: |
           set -euo pipefail
           mkdir -p dist
           # Build list of include paths present in repo
-          include=(LICENSE README.md requirements.txt config docker bin scripts sql src adoc)
+          include=(LICENSE README.md requirements.txt config docker bin scripts sql src adoc system-catalog report)
           present=()
           for p in "${include[@]}"; do
             [ -e "$p" ] && present+=("$p")
@@ -46,15 +46,14 @@ jobs:
           tar --exclude-vcs \
               --exclude=venv \
               --exclude=.venv \
-              --exclude=report \
               --exclude=.git \
               --exclude='**/__pycache__' \
-              -czf dist/taqo-yb-${{ steps.ver.outputs.version }}.tar.gz \
+              -czf dist/TAQO-${{ steps.ver.outputs.version }}.tar.gz \
               -C . \
               "${present[@]}"
 
           # Zip of SQL models only
-          if [ -d sql ]; then (cd sql && zip -r ../dist/sql-models-${{ steps.ver.outputs.version }}.zip .); fi
+          if [ -d sql ]; then (cd sql && zip -r ../dist/models-${{ steps.ver.outputs.version }}.zip .); fi
 
       - name: Generate checksums
         run: |
@@ -64,13 +63,13 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: taqo-yb ${{ steps.ver.outputs.version }}
+          tag_name: v${{ inputs.version }}
+          name: TAQO ${{ steps.ver.outputs.version }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, 'rc') || contains(github.ref_name, 'beta') }}
+          prerelease: ${{ contains(inputs.version, 'rc') || contains(inputs.version, 'beta') }}
           files: |
-            dist/taqo-yb-${{ steps.ver.outputs.version }}.tar.gz
-            dist/sql-models-${{ steps.ver.outputs.version }}.zip
+            dist/TAQO-${{ steps.ver.outputs.version }}.tar.gz
+            dist/models-${{ steps.ver.outputs.version }}.zip
             dist/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
