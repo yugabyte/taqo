@@ -306,7 +306,7 @@ class SQLModel(QTFModel):
     def get_queries(self, tables):
         queries = []
 
-        if self.config.num_queries == 0:
+        if self.config.num_queries <= 0:
             return queries
 
         query_file_lists = sorted(list(glob.glob(f"{get_model_path(self.config.model)}/queries/*.sql")))
