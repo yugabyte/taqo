@@ -356,7 +356,7 @@ if __name__ == "__main__":
         all_pairs_threshold=int(configuration.get("all-pairs-threshold", 3)),
 
         num_queries=int(args.num_queries)
-        if int(args.num_queries) > 0 else configuration.get("num-queries", -1),
+        if args.num_queries is not None else configuration.get("num-queries", -1),
         num_retries=int(configuration.get("num-retries", 5)),
         num_warmup=int(configuration.get("num-warmup", 1)),
 
