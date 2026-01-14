@@ -1,5 +1,4 @@
 select * from t100 where c1 < 1000 or (c2 < 1000 and c2 % 2 = 0 and c3 < 1000 and c3 % 2 = 0);
-select * from t100;
 select * from t1000 where c1 < 1000 or (c2 < 1000 and c2 % 2 = 0 and c3 < 1000 and c3 % 2 = 0);
 select * from t10000 where c1 < 1000 or (c2 < 1000 and c2 % 2 = 0 and c3 < 1000 and c3 % 2 = 0);
 select * from t100000 where c1 < 1000 or (c2 < 1000 and c2 % 2 = 0 and c3 < 1000 and c3 % 2 = 0);
