@@ -124,7 +124,7 @@ insert into t1000000m
     from (
       select i,
           (row_number() over (order by random() + 1) % 2 + 1) * 50 i1,
-          (row_number() over (order by random() + 2) % 4 + 1) * 25 i2,
+          i + 1000000 i2,
           (row_number() over (order by random() + 3) % 10 + 1) * 10 i3,
           (row_number() over (order by random() + 4) % 50 + 1) * 2 i4,
           (row_number() over (order by random() + 5) % 100000 + 1) i5,

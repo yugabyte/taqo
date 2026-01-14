@@ -81,6 +81,7 @@ create index t100000_bucketized_3 on t100000 ((yb_hash_code(c1, c2) % 3), c1, c2
 
 
 
+
 --------------------------------------------- TABLE - V ---------------------------------------------
 create table t100000w (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(8192), bucketid int generated always as ( yb_hash_code(c1, c2) % 3 ) STORED, primary key (bucketid asc, c1, c2));
 create unique index t100000w_simple_index_1 on t100000w (c2 asc);
