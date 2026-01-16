@@ -55,6 +55,16 @@ create statistics t100000_c4mod on (c4 % 2) from t100000;
 create statistics t100000w_c4mod on (c4 % 2) from t100000w;
 create statistics t1000000m_c4mod on (c4 % 2) from t1000000m;
 
+create statistics table_simple_c1c4 on c1, c4 from table_simple;
+create statistics table_simple_c2c2expr on c2, (c2*2 - c2) from table_simple;
+create statistics table_simple_c3c4 on c3, c4 from table_simple;
+create statistics table_simple_c4c4expr on c2, (c4*2 - c4) from table_simple;
+
+create statistics table_bucketized_c1c4 on c1, c4 from table_bucketized;
+create statistics table_bucketized_c2c2expr on c2, (c2*2 - c2) from table_bucketized;
+create statistics table_bucketized_c3c4 on c3, c4 from table_bucketized;
+create statistics table_bucketized_c4c4expr on c2, (c4*2 - c4) from table_bucketized;
+
 
 analyze t100;
 analyze t1000;
@@ -62,3 +72,5 @@ analyze t10000;
 analyze t100000;
 analyze t100000w;
 analyze t1000000m;
+analyze table_simple;
+analyze table_bucketized;
