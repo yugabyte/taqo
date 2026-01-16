@@ -1,0 +1,2 @@
+-- add simple table with simple index queries here.
+-- same queries will be run for the bucketized index table as well

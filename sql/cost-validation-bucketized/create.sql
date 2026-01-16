@@ -114,3 +114,25 @@ create index t1000000m_bucketized_2 on t1000000m ((yb_hash_code(c2, c4) % 3), c2
 create index t1000000m_bucketized_3 on t1000000m ((yb_hash_code(c1, c2) % 3), c1, c2);
 create index t1000000m_bucketized_4 on t1000000m ((yb_hash_code(bucketid, c6) % 3), bucketid, c6); -- using bucketid here
 create index t1000000m_bucketized_5 on t1000000m ((yb_hash_code(c2, c5) % 3), c2, c5);
+
+
+------------------- custom tables here for checking behavior with and without ANY bucketized indexes -------------------
+--------------------------------------------- below table will have only simple indexes ---------------------------------------------
+create table table_simple (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(1024), bucketid int generated always as ( yb_hash_code(c1, c2) % 3 ) STORED, primary key (bucketid asc, c1, c2));
+create index table_simple_index_1 on table_simple (c2, c3);
+create index table_simple_index_2 on table_simple(c2, c4);
+create index table_simple_index_3 on table_simple (c4,c5);
+create index table_simple_index_4 on table_simple (c6,v);
+create index table_simple_index_5 on table_simple (c2 asc);
+create index table_simple_index_6 on table_simple (c4 asc);
+create index table_simple_index_7 on table_simple (c5 asc);
+
+
+
+--------------------------------------------- below table will have only bucketized indexes ---------------------------------------------
+create table table_bucketized (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(1024), bucketid int generated always as ( yb_hash_code(c1, c2) % 3 ) STORED, primary key (bucketid asc, c1, c2));
+create index table_bucketized_only_index_1 on table_bucketized ((yb_hash_code(c2, c3) % 3), c2, c3);
+create index table_bucketized_only_index_2 on table_bucketized ((yb_hash_code(c2, c4) % 3), c2, c4);
+create index table_bucketized_only_index_3 on table_bucketized ((yb_hash_code(c4, c5) % 3), c4, c5);
+create index table_bucketized_only_index_4 on table_bucketized ((yb_hash_code(c4, c5) % 3), c6, v);
+
