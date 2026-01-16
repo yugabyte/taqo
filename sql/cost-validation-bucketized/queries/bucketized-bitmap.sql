@@ -49,18 +49,10 @@ select avg(c3) from t1000000m where c5 <= 100 and (c4 = 4 or c3 = 4);
 select avg(c3) from t1000000m where c5 <= 1000 and (c4 <= 10 or c3 <= 10);
 select avg(c3) from t1000000m where c5 <= 100 and (c4 <= 10 or c3 <= 10);
 
-SELECT c2, c3, c4
-FROM t1000
-WHERE (yb_hash_code(c2,c3) % 3) IN (0,1,2)
-  AND (yb_hash_code(c2,c4) % 3) IN (0,1,2)
-  AND c2 > 10
-ORDER BY c2, c3;
-
 
 SELECT c1, c2, c3
 FROM t10000
-WHERE (yb_hash_code(c1,c2) % 3) IN (0,1,2)
-   OR (yb_hash_code(c2,c4) % 3) IN (0,1,2)
+WHERE c1>c2 and c3<c4 and c2<c4 or c1>c4
 ORDER BY c1, c2;
 
 
@@ -68,23 +60,20 @@ SELECT a.c1, a.c2, b.c3
 FROM t1000000m a
 JOIN t100000w b
   ON a.c1 = b.c1
-WHERE (yb_hash_code(a.c1,a.c2)%3) IN (0,1,2)
-  AND (yb_hash_code(b.c2,b.c3)%3) IN (0,1,2)
+WHERE a.c1=a.c2 and b.c2>b.c3
 ORDER BY a.c1, a.c2;
 
 
 SELECT c2, c3
 FROM t1000
-WHERE (yb_hash_code(c2, c3) % 3) = 0
-   OR (yb_hash_code(c2, c4) % 3) = 1
+WHERE c2>c3 and c3<c4
 ORDER BY c2, c3;
 
 SELECT t1.c1, t1.c2, t2.c3
 FROM t100 t1
 JOIN t1000 t2
   ON t1.c2 = t2.c2
-WHERE (yb_hash_code(t1.c2,t1.c3) % 3) IN (0,1)
-   OR (yb_hash_code(t2.c2,t2.c4) % 3) IN (1,2)
+WHERE t1.c2=t2.c4
 ORDER BY t1.c1, t1.c2;
 
 
@@ -93,7 +82,7 @@ SELECT m.c1, m.c2, w.v
 FROM t1000000m m
 JOIN t100000w w
   ON w.c1 = m.c1
-WHERE (yb_hash_code(m.c1, m.c2) % 3) IN (0,1,2)
+WHERE m.c1>m.c2
 ORDER BY m.c1 DESC, m.c2 DESC;
 
 SELECT c1,c2
@@ -101,6 +90,5 @@ FROM t1000 t
 WHERE EXISTS (
     SELECT 1 FROM t100 t2
     WHERE t.c2 = t2.c2
-      AND ((yb_hash_code(t.c2,t.c3) % 3) IN (0,1) OR (yb_hash_code(t2.c2,t2.c4) % 3) IN (1,2))
 )
 ORDER BY c1,c2;

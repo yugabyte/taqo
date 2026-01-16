@@ -323,19 +323,18 @@ order by c1, c2;
 select c2, c3,
        avg(c3) over(partition by c2) as avg_c3
 from t1000
-where (yb_hash_code(c2, c3) % 3) in (0,1,2)
+where c2>c3
 order by c2, c3;
 
 select c2, c4,
        max(c4) over(partition by c2) as max_c4
 from t1000
-where (yb_hash_code(c2, c4) % 3) in (0,1,2)
+where c2>c4
 order by c2, c4;
 
 select c2, c3,
        row_number() over(partition by c2 order by c3) as rn
 from t1000
-where (yb_hash_code(c2, c3) % 3) in (0,1,2)
 order by c2, c3;
 
 
@@ -348,13 +347,13 @@ order by c2, c3;
 select c1, c2, c3,
        count(*) over(partition by c1) as cnt
 from t10000
-where bucketid in (0,1,2)
+where c1>c2 and c2>c3
 order by c1, c2;
 
 select c1, c2,
        avg(c2) over(order by c1) as running_avg
 from t10000
-where bucketid in (0,1,2)
+where c1>c2
 order by c1, c2;
 
 select c1, c2,
@@ -372,13 +371,13 @@ order by c2, c4;
 select c2, c3,
        row_number() over(partition by c2 order by c3 desc) as rn
 from t100000
-where (yb_hash_code(c2, c3) % 3) in (0,1,2)
+where c2<c3
 order by c2, c3;
 
 select c1, c2, v,
        count(*) over(partition by c1) as cnt
 from t100000w
-where bucketid in (0,1,2)
+where v='---' and c1=10
 order by c1, c2;
 
 select c2, v,
