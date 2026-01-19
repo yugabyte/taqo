@@ -276,9 +276,15 @@ class SQLModel(QTFModel):
 
     @staticmethod
     def get_comments(full_query):
-        for token in sqlparse.parse(full_query)[0].tokens:
-            if isinstance(token, Comment):
-                return token.value
+        lines = full_query.strip().split('\n')
+        comment_lines = []
+        for line in lines:
+            stripped = line.strip()
+            if stripped.startswith('--'):
+                comment_lines.append(stripped)
+            elif stripped:
+                break
+        return '\n'.join(comment_lines) if comment_lines else None
 
     def get_query_hint_tips(self, full_query):
         tips = QueryTips()
