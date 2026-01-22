@@ -54,3 +54,27 @@ create index t1000000m_c5 on t1000000m (c5 asc);
 create index t1000000m_c6 on t1000000m (c6 asc);
 create index t1000000m_c3c4c5 on t1000000m (c3 asc, c4 asc, c5 asc);
 create index t1000000m_c5c4c3 on t1000000m (c5 asc, c4 asc, c3 asc);
+
+
+
+--------------------------------------------
+---- table_simple variation of postgres ----
+--------------------------------------------
+
+create table table_simple (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(1024), primary key (c1));
+create unique index table_simple_c2 on table_simple (c2 asc);
+create index table_simple_c3 on table_simple (c3 asc);
+create index table_simple_c4 on table_simple (c4 asc);
+create index table_simple_c6 on table_simple (c6 asc);
+create index table_simple_c2_c4 on table_simple (c2 asc) include (c4);
+create index table_simple_c2_c4_v on table_simple (c2 asc) include (c4, v);
+
+
+--------------------------------------------
+---- table_bucketized variation of postgres ----
+--------------------------------------------
+create table table_bucketized (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(1024), bucketid int generated always as (mod(abs(c1), 3)) stored, primary key (bucketid, c1, c2));
+create index table_bucketized_only_index_1_ on table_bucketized (mod(abs(c2), 3), c2, c3);
+create index table_bucketized_only_index_2_ on table_bucketized (mod(abs(c4), 3), c2, c4);
+create index table_bucketized_only_index_3_ on table_bucketized (mod(abs(c5), 3), c4, c5);
+create index table_bucketized_only_index_4_ on table_bucketized (mod(abs(c6), 3), c6, v);
