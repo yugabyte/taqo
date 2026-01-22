@@ -36,41 +36,91 @@ def remove_with_ordinality(sql_str):
 
 
 def get_result_for_consistency_check(cur, is_dml: bool, has_order_by: bool, has_limit: bool):
+    """Fetch results for consistency check with memory-efficient approach.
+
+    Uses config.max_rows_for_hash to limit rows included in hash calculation.
+    For larger result sets, we use row count + sample for consistency.
+    """
+    config = Config()
+    max_rows = config.max_rows_for_hash or 10000
+
     if is_dml:
         return cur.rowcount, f"{cur.rowcount} updates"
-    
+
     # if there is a limit without order by we can't validate results
+    if has_limit and not has_order_by:
+        # Still need to consume cursor
+        _discard_cursor_results(cur)
+        return 0, "LIMIT_WITHOUT_ORDER_BY"
+
     str_result = []
     cardinality = 0
-    if has_limit and not has_order_by:
-        str_result = ["LIMIT_WITHOUT_ORDER_BY"]
-    else:
-        result = cur.fetchall()
+    warned = False
 
-        for row in result:
+    # Fetch in batches to avoid loading everything at once
+    while True:
+        rows = cur.fetchmany(1000)
+        if not rows:
+            break
+
+        for row in rows:
+            cardinality += 1
+            # Only include first N rows in hash to limit memory
+            if cardinality <= max_rows:
+                for column_value in row:
+                    str_result.append(f"{str(column_value)}")
+            elif not warned:
+                config.logger.warning(
+                    f"Result set exceeds max-rows-for-hash ({max_rows}). "
+                    f"Using partial hash for consistency check.")
+                warned = True
+
+    if not has_order_by:
+        str_result.sort()
+
+    # Include cardinality in hash so different-sized results don't collide
+    if cardinality > max_rows:
+        str_result.append(f"__cardinality__{cardinality}")
+
+    return cardinality, ''.join(str_result)
+
+
+def get_result(cur, is_dml: bool, is_explain: bool = False):
+    """Fetch query results.
+
+    Args:
+        is_explain: If True, returns raw plan text without building string list.
+    """
+    if is_dml:
+        return cur.rowcount, f"{cur.rowcount} updates"
+
+    if is_explain:
+        # For EXPLAIN queries, just get the plan text
+        rows = cur.fetchall()
+        plan_text = '\n'.join(str(row[0]) for row in rows)
+        return len(rows), plan_text
+
+    # For regular queries, stream results to avoid OOM
+    cardinality = 0
+    str_result = []
+
+    while True:
+        rows = cur.fetchmany(1000)
+        if not rows:
+            break
+
+        for row in rows:
             cardinality += 1
             for column_value in row:
                 str_result.append(f"{str(column_value)}")
 
-        if not has_order_by:
-            str_result.sort()
-
     return cardinality, ''.join(str_result)
 
-def get_result(cur, is_dml: bool):
-    if is_dml:
-        return cur.rowcount, f"{cur.rowcount} updates"
 
-    result = cur.fetchall()
-
-    str_result = []
-    cardinality = 0
-    for row in result:
-        cardinality += 1
-        for column_value in row:
-            str_result.append(f"{str(column_value)}")
-
-    return cardinality, ''.join(str_result)
+def _discard_cursor_results(cur):
+    """Consume and discard cursor results to free server resources."""
+    while cur.fetchmany(1000):
+        pass
 
 
 def calculate_avg_execution_time(cur,
@@ -120,7 +170,7 @@ def calculate_avg_execution_time(cur,
             else:
                 if iteration < num_warmup:
                     query.parameters = evaluate_sql(cur, query_str)
-                    _, result = get_result(cur, is_dml)
+                    _, result = get_result(cur, is_dml, is_explain=with_analyze)
                 else:
                     if not execution_plan_collected:
                         collect_execution_plan(cur, connection, query, sut_database)
@@ -133,7 +183,7 @@ def calculate_avg_execution_time(cur,
 
                     evaluate_sql(cur, query_str)
                     config.logger.debug("SQL >> Getting results")
-                    _, result = get_result(cur, is_dml)
+                    _, result = get_result(cur, is_dml, is_explain=with_analyze)
 
                     if with_analyze:
                         execution_times.append(extract_execution_time_from_analyze(result))

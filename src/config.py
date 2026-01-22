@@ -109,6 +109,7 @@ class Config(metaclass=Singleton):
     test_query_timeout: int = None
     compaction_timeout: int = None
     all_pairs_threshold: int = None
+    max_rows_for_hash: int = None  # Max rows to include in consistency hash (default: 10000)
 
     yugabyte_bin_path: str = None
     yugabyte_collect_stats: bool = True
