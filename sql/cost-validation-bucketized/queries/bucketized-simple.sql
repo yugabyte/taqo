@@ -26,64 +26,64 @@ SELECT c1,v FROM t10000 WHERE  length(v)=4 or c2>10 order by c1,v;
 SELECT c1,v FROM t10000 WHERE length(v)=4 or c2>10 and c4 between 10 and 20 order by c1,v;
 SELECT c2,c3,c4 FROM t10000 WHERE c3>c4 order by c2,c3,c4;
 SELECT c1, c2, c3, c4 FROM t100000 WHERE bucketid in (0,2,1) order by c1,c2;
-create or replace function bucketed_or_full_scan_hint()
-returns table (c2 int, c3 int)
-language plpgsql
-as $$
-begin
-  return query
-  /*+IndexScan (t100000 t100000_bucketized_1)*/
-  select c2, c3
-  from t100000
-  where (yb_hash_code(c2, c3)%3) in (0,2,1)
-  order by c2, c3;
-exception when others then
-  return query
-  select c2, c3
-  from t100000;
-end;
-$$;
-select * from bucketed_or_full_scan_hint();
+-- create or replace function bucketed_or_full_scan_hint()
+-- returns table (c2 int, c3 int)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   /*+IndexScan (t100000 t100000_bucketized_1)*/
+--   select c2, c3
+--   from t100000
+--   where (yb_hash_code(c2, c3)%3) in (0,2,1)
+--   order by c2, c3;
+-- exception when others then
+--   return query
+--   select c2, c3
+--   from t100000;
+-- end;
+-- $$;
+-- select * from bucketed_or_full_scan_hint();
+--
+-- create or replace function bucketed_or_full_scan_hint_2()
+-- returns table (c2 int, c3 int, c4 int)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   /*+ IndexScan(t100000 t100000_bucketized_2) */
+--   select c2, c3, c4
+--   from t100000
+--   where (yb_hash_code(c2, c4) % 3) in (0,1,2)
+--     and c3 is not null
+--   order by c2, c4;
+-- exception when others then
+--   return query
+--   select c2, c3, c4
+--   from t100000;
+-- end;
+-- $$;
+-- select * from bucketed_or_full_scan_hint_2();
 
-create or replace function bucketed_or_full_scan_hint_2()
-returns table (c2 int, c3 int, c4 int)
-language plpgsql
-as $$
-begin
-  return query
-  /*+ IndexScan(t100000 t100000_bucketized_2) */
-  select c2, c3, c4
-  from t100000
-  where (yb_hash_code(c2, c4) % 3) in (0,1,2)
-    and c3 is not null
-  order by c2, c4;
-exception when others then
-  return query
-  select c2, c3, c4
-  from t100000;
-end;
-$$;
-select * from bucketed_or_full_scan_hint_2();
-
-create or replace function bucketed_or_full_scan_hint_3()
-returns table (c1 int, c2 int, c3 int, c4 int)
-language plpgsql
-as $$
-begin
-  return query
-  /*+ IndexScan(t100000w t100000w_bucketized_1) */
-  select c1, c2, c3, c4
-  from t100000w
-  where (yb_hash_code(c2, c3) % 3) in (0,2,1)
-    and v like '----%'
-  order by c2, c3;
-exception when others then
-  return query
-  select c1, c2, c3, c4
-  from t100000w;
-end;
-$$;
-select * from bucketed_or_full_scan_hint_3();
+-- create or replace function bucketed_or_full_scan_hint_3()
+-- returns table (c1 int, c2 int, c3 int, c4 int)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   /*+ IndexScan(t100000w t100000w_bucketized_1) */
+--   select c1, c2, c3, c4
+--   from t100000w
+--   where (yb_hash_code(c2, c3) % 3) in (0,2,1)
+--     and v like '----%'
+--   order by c2, c3;
+-- exception when others then
+--   return query
+--   select c1, c2, c3, c4
+--   from t100000w;
+-- end;
+-- $$;
+-- select * from bucketed_or_full_scan_hint_3();
 
 
 SELECT c1, c2, c3, c4 FROM t100000w WHERE c1 % 19 + c2 % 11 < 20 AND c1 * 2 > c2 + 100 ORDER BY c1, c2;

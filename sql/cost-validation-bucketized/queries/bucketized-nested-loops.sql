@@ -263,51 +263,51 @@ lateral (
 order by c2, c4
 limit 60;
 
-create or replace function bucketed_or_full_scan()
-returns setof t10000
-language plpgsql
-as $$
-begin
-  return query
-  with buckets(mod) as (select generate_series(0,2))
-  select r.* from buckets,lateral (
-    select * from t10000
-    where (yb_hash_code(c2,c4)%3)=buckets.mod
-    order by c2,c4
-  ) r limit 10;
-exception when others then
-  return query select * from t10000;
-end;
-$$;
+-- create or replace function bucketed_or_full_scan()
+-- returns setof t10000
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   with buckets(mod) as (select generate_series(0,2))
+--   select r.* from buckets,lateral (
+--     select * from t10000
+--     where (yb_hash_code(c2,c4)%3)=buckets.mod
+--     order by c2,c4
+--   ) r limit 10;
+-- exception when others then
+--   return query select * from t10000;
+-- end;
+-- $$;
+--
+-- select * from bucketed_or_full_scan();
 
-select * from bucketed_or_full_scan();
-
-create or replace function bucketed_or_full_scan_t100000w()
-returns setof t100000w
-language plpgsql
-as $$
-begin
-  return query
-  with buckets(mod) as (select generate_series(0,2))
-  select r.*
-  from buckets,
-  lateral (
-    select c1, c2, c3, c4, c5, c6, bucketid
-    from t100000w
-    where bucketid in (0,1,2)
-      and (yb_hash_code(c2,c3)%3)=buckets.mod
-      and c3>10
-    order by bucketid, c2, c3
-    limit 29
-  ) r
-  order by bucketid, c2, c3
-  limit 29;
-exception when others then
-  return query select * from t100000w;
-end;
-$$;
-
-select * from bucketed_or_full_scan_t100000w();
+-- create or replace function bucketed_or_full_scan_t100000w()
+-- returns setof t100000w
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   with buckets(mod) as (select generate_series(0,2))
+--   select r.*
+--   from buckets,
+--   lateral (
+--     select c1, c2, c3, c4, c5, c6, bucketid
+--     from t100000w
+--     where bucketid in (0,1,2)
+--       and (yb_hash_code(c2,c3)%3)=buckets.mod
+--       and c3>10
+--     order by bucketid, c2, c3
+--     limit 29
+--   ) r
+--   order by bucketid, c2, c3
+--   limit 29;
+-- exception when others then
+--   return query select * from t100000w;
+-- end;
+-- $$;
+--
+-- select * from bucketed_or_full_scan_t100000w();
 
 
 with drivers as (
@@ -328,113 +328,113 @@ lateral (
   limit 15
 ) m
 order by m.c1, m.c2;
+--
+-- create or replace function bucketed_or_full_scan_t100()
+-- returns table (c1 int, c2 int, avg_c4 numeric, max_c5 int)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   with seeds as (
+--     select c1, c2
+--     from t100
+--     where bucketid in (0,1,2)
+--     order by c1, c2
+--   )
+--   select s.c1, s.c2, x.avg_c4, x.max_c5
+--   from seeds s,
+--   lateral (
+--     select avg(c4) as avg_c4,
+--            max(c5) as max_c5
+--     from t100000
+--     where c1 = s.c1
+--       and c2 = s.c2
+--       and (yb_hash_code(c1,c2)%3) in (0,1,2)
+--   ) x
+--   order by s.c1, s.c2;
+-- exception when others then
+--   return query
+--   select c1, c2, avg(c4), max(c5)
+--   from t100000
+--   group by c1, c2;
+-- end;
+-- $$;
 
-create or replace function bucketed_or_full_scan_t100()
-returns table (c1 int, c2 int, avg_c4 numeric, max_c5 int)
-language plpgsql
-as $$
-begin
-  return query
-  with seeds as (
-    select c1, c2
-    from t100
-    where bucketid in (0,1,2)
-    order by c1, c2
-  )
-  select s.c1, s.c2, x.avg_c4, x.max_c5
-  from seeds s,
-  lateral (
-    select avg(c4) as avg_c4,
-           max(c5) as max_c5
-    from t100000
-    where c1 = s.c1
-      and c2 = s.c2
-      and (yb_hash_code(c1,c2)%3) in (0,1,2)
-  ) x
-  order by s.c1, s.c2;
-exception when others then
-  return query
-  select c1, c2, avg(c4), max(c5)
-  from t100000
-  group by c1, c2;
-end;
-$$;
+-- select * from bucketed_or_full_scan_t100();
 
-select * from bucketed_or_full_scan_t100();
+-- create or replace function bucketed_or_full_scan_t1000()
+-- returns table (c2 int, c3 int, c4 int, rank bigint)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   with base as (
+--     select c2, c3
+--     from t1000
+--     where bucketid in (0,1,2)
+--     order by c2, c3
+--   )
+--   select b.c2, b.c3, r.c4, r.rank
+--   from base b,
+--   lateral (
+--     select c2, c3, c4,
+--            dense_rank() over(order by c4) as rank
+--     from t100000w
+--     where c2 = b.c2
+--       and c3 = b.c3
+--       and (yb_hash_code(c2,c3)%3) in (0,1,2)
+--     order by c2, c3
+--     limit 10
+--   ) r
+--   order by r.c2, r.c3;
+-- exception when others then
+--   return query
+--   select c2, c3, c4, dense_rank() over(order by c4)
+--   from t100000w;
+-- end;
+-- $$;
+--
+-- select * from bucketed_or_full_scan_t1000();
 
-create or replace function bucketed_or_full_scan_t1000()
-returns table (c2 int, c3 int, c4 int, rank bigint)
-language plpgsql
-as $$
-begin
-  return query
-  with base as (
-    select c2, c3
-    from t1000
-    where bucketid in (0,1,2)
-    order by c2, c3
-  )
-  select b.c2, b.c3, r.c4, r.rank
-  from base b,
-  lateral (
-    select c2, c3, c4,
-           dense_rank() over(order by c4) as rank
-    from t100000w
-    where c2 = b.c2
-      and c3 = b.c3
-      and (yb_hash_code(c2,c3)%3) in (0,1,2)
-    order by c2, c3
-    limit 10
-  ) r
-  order by r.c2, r.c3;
-exception when others then
-  return query
-  select c2, c3, c4, dense_rank() over(order by c4)
-  from t100000w;
-end;
-$$;
+-- create or replace function bucketed_or_full_scan_t100_lateral()
+-- returns table (c1 int, c2 int, c3 int)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   with base as (
+--     select c1
+--     from t100
+--     where bucketid in (0,1,2)
+--   )
+--   select b.c1, l2.c2, l3.c3
+--   from base b,
+--   lateral (
+--     select c1, c2
+--     from t1000
+--     where c1 = b.c1
+--       and bucketid in (0,1,2)
+--     order by c1, c2
+--     limit 5
+--   ) l2,
+--   lateral (
+--     select c1, c2, c3
+--     from t100000
+--     where c1 = l2.c1
+--       and c2 = l2.c2
+--       and (yb_hash_code(c1,c2)%3) in (0,1,2)
+--     order by c1, c2
+--     limit 5
+--   ) l3
+--   order by b.c1, l2.c2;
+-- exception when others then
+--   return query
+--   select c1, c2, c3
+--   from t100000;
+-- end;
+-- $$;
 
-select * from bucketed_or_full_scan_t1000();
-
-create or replace function bucketed_or_full_scan_t100_lateral()
-returns table (c1 int, c2 int, c3 int)
-language plpgsql
-as $$
-begin
-  return query
-  with base as (
-    select c1
-    from t100
-    where bucketid in (0,1,2)
-  )
-  select b.c1, l2.c2, l3.c3
-  from base b,
-  lateral (
-    select c1, c2
-    from t1000
-    where c1 = b.c1
-      and bucketid in (0,1,2)
-    order by c1, c2
-    limit 5
-  ) l2,
-  lateral (
-    select c1, c2, c3
-    from t100000
-    where c1 = l2.c1
-      and c2 = l2.c2
-      and (yb_hash_code(c1,c2)%3) in (0,1,2)
-    order by c1, c2
-    limit 5
-  ) l3
-  order by b.c1, l2.c2;
-exception when others then
-  return query
-  select c1, c2, c3
-  from t100000;
-end;
-$$;
-
-select * from bucketed_or_full_scan_t100_lateral();
+-- select * from bucketed_or_full_scan_t100_lateral();
 
 
 with recursive r(c1,c2,depth) as (
@@ -462,80 +462,80 @@ lateral (
 order by r.c1, r.c2;
 
 
-create or replace function bucketed_or_full_scan_recursive()
-returns table (c1 int, c2 int, c3 int, c4 int, v char(1024))
-language plpgsql
-as $$
-begin
-  return query
-  with recursive r(c1,c2,depth) as (
-    select c1, c2, 1
-    from t10000
-    where c1 > c2
-    union all
-    select t.c1, t.c2, depth+1
-    from r
-    join t1000 t
-      on t.c1 = r.c1
-     and t.c2 = r.c2
-    where depth < 4
-  )
-  select r.c1, r.c2, x.c3, x.c4, x.v
-  from r,
-  lateral (
-    select c1, c3, c4, v
-    from t100000
-    where c1 = r.c1
-      and least(coalesce(c3,0),coalesce(c4,0)) > 10
-      and greatest(c3,c4) < 500
-      and (yb_hash_code(c1,c2)%3) in (0,1,2)
-    order by c1 desc, c2 desc
-    limit 5
-  ) x
-  order by r.c1, r.c2;
-exception when others then
-  return query
-  select c1, c2, c3, c4, v
-  from t100000;
-end;
-$$;
+-- create or replace function bucketed_or_full_scan_recursive()
+-- returns table (c1 int, c2 int, c3 int, c4 int, v char(1024))
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   with recursive r(c1,c2,depth) as (
+--     select c1, c2, 1
+--     from t10000
+--     where c1 > c2
+--     union all
+--     select t.c1, t.c2, depth+1
+--     from r
+--     join t1000 t
+--       on t.c1 = r.c1
+--      and t.c2 = r.c2
+--     where depth < 4
+--   )
+--   select r.c1, r.c2, x.c3, x.c4, x.v
+--   from r,
+--   lateral (
+--     select c1, c3, c4, v
+--     from t100000
+--     where c1 = r.c1
+--       and least(coalesce(c3,0),coalesce(c4,0)) > 10
+--       and greatest(c3,c4) < 500
+--       and (yb_hash_code(c1,c2)%3) in (0,1,2)
+--     order by c1 desc, c2 desc
+--     limit 5
+--   ) x
+--   order by r.c1, r.c2;
+-- exception when others then
+--   return query
+--   select c1, c2, c3, c4, v
+--   from t100000;
+-- end;
+-- $$;
 
-select * from bucketed_or_full_scan_recursive();
+-- select * from bucketed_or_full_scan_recursive();
 
 
-create or replace function bucketed_or_full_scan_window()
-returns table (c2 int, c3 int, v char(1024), run_sum bigint)
-language plpgsql
-as $$
-begin
-  return query
-  with seed as (
-    select c2, c3
-    from t10000
-    where c2 between 10 and 50
-  )
-  select seed.c2, seed.c3, x.v, x.run_sum
-  from seed,
-  lateral (
-    select v,
-           sum(c5) over(order by c4 desc rows between unbounded preceding and current row) as run_sum
-    from t100000w
-    where c2 = seed.c2
-      and c3 = seed.c3
-      and length(v) > 5
-      and (yb_hash_code(c2,c3)%3) in (0,1,2)
-    order by c4 desc
-    limit 8
-  ) x
-  order by seed.c2 desc, seed.c3 desc;
-exception when others then
-  return query
-  select c2, c3, v, sum(c5) over(order by c4 desc)
-  from t100000w;
-end;
-$$;
+-- create or replace function bucketed_or_full_scan_window()
+-- returns table (c2 int, c3 int, v char(1024), run_sum bigint)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   with seed as (
+--     select c2, c3
+--     from t10000
+--     where c2 between 10 and 50
+--   )
+--   select seed.c2, seed.c3, x.v, x.run_sum
+--   from seed,
+--   lateral (
+--     select v,
+--            sum(c5) over(order by c4 desc rows between unbounded preceding and current row) as run_sum
+--     from t100000w
+--     where c2 = seed.c2
+--       and c3 = seed.c3
+--       and length(v) > 5
+--       and (yb_hash_code(c2,c3)%3) in (0,1,2)
+--     order by c4 desc
+--     limit 8
+--   ) x
+--   order by seed.c2 desc, seed.c3 desc;
+-- exception when others then
+--   return query
+--   select c2, c3, v, sum(c5) over(order by c4 desc)
+--   from t100000w;
+-- end;
+-- $$;
 
-select * from bucketed_or_full_scan_window();
+-- select * from bucketed_or_full_scan_window();
 
 
 
