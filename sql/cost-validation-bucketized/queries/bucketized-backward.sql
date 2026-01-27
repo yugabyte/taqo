@@ -54,7 +54,7 @@ FROM t1000000m a
 JOIN t1000000m b
   ON a.c1 = b.c1
  AND a.c2 = b.c2
-WHERE (yb_hash_code(a.c1,a.c2)%3) IN (0,1,2)
+WHERE a.c1>a.c2
 ORDER BY a.c1 DESC, a.c2 DESC;
 
 
@@ -74,7 +74,7 @@ ORDER BY c1 DESC, c2 DESC;
 
 SELECT c1, c2, c3
 FROM t1000000m
-WHERE (yb_hash_code(c1,c2)%3) IN (0,1,2)
+WHERE c1>c2
 ORDER BY c1 DESC, c2 DESC
 LIMIT 500;
 
@@ -169,7 +169,7 @@ from t1000000m a
 join t1000000m b
   on a.c1 = b.c1
  and a.c2 = b.c2
-where (yb_hash_code(a.c1,a.c2)%3) in (0,1,2)
+where a.c1>a.c2
 order by a.c1 desc, a.c2 desc;
 
 

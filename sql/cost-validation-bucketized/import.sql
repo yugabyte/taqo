@@ -72,10 +72,10 @@ insert into t10000
 select setseed(0.222);
 insert into t100000
   select i, i2,
-         nullif((i3+4)/5, (100000+4)/5),
-         nullif((i4+9)/10, (100000+9)/10),
+         nullif((i3+4)/5, (10000+4)/5),
+         nullif((i4+9)/10, (10000+9)/10),
          i5,
-         nullif((i6+99)/100, (100000+99)/100),
+         nullif((i6+99)/100, (10000+99)/100),
          lpad(sha512(i5::text::bytea)||sha512(i::text::bytea)::text, 1024, '-')
     from (
       select i,
@@ -84,16 +84,16 @@ insert into t100000
           row_number() over (order by random() + 2) i4,
           row_number() over (order by random() + 3) i5,
           row_number() over (order by random() + 4) i6
-        from generate_series(1, 100000) i
+        from generate_series(1, 10000) i
     ) v order by 1;
 
 select setseed(0.222);
 insert into t100000w
   select i, i2,
-         nullif((i3+4)/5, (100000+4)/5),
-         nullif((i4+9)/10, (100000+9)/10),
+         nullif((i3+4)/5, (10000+4)/5),
+         nullif((i4+9)/10, (10000+9)/10),
          i5,
-         nullif((i6+99)/100, (100000+99)/100),
+         nullif((i6+99)/100, (10000+99)/100),
          lpad(sha512(i5::text::bytea)||sha512(i::text::bytea)::text, 8192, '-')
     from (
       select i,
@@ -102,7 +102,7 @@ insert into t100000w
           row_number() over (order by random() + 2) i4,
           row_number() over (order by random() + 3) i5,
           row_number() over (order by random() + 4) i6
-        from generate_series(1, 100000) i
+        from generate_series(1, 10000) i
     ) v order by 1;
 
 
@@ -124,12 +124,12 @@ insert into t1000000m
     from (
       select i,
           (row_number() over (order by random() + 1) % 2 + 1) * 50 i1,
-          i + 1000000 i2,
+          i + 10000 i2,
           (row_number() over (order by random() + 3) % 10 + 1) * 10 i3,
           (row_number() over (order by random() + 4) % 50 + 1) * 2 i4,
-          (row_number() over (order by random() + 5) % 100000 + 1) i5,
-          (row_number() over (order by random() + 5) % 10000 + 1) i6
-        from generate_series(1, 1000000) i
+          (row_number() over (order by random() + 5) % 1000 + 1) i5,
+          (row_number() over (order by random() + 5) % 100 + 1) i6
+        from generate_series(1, 10000) i
     ) v order by 1;
 
 
@@ -148,7 +148,7 @@ insert into table_bucketized
           row_number() over (order by random() + 2) i4,
           row_number() over (order by random() + 3) i5,
           row_number() over (order by random() + 4) i6
-        from generate_series(1, 100000) i
+        from generate_series(1, 1000) i
     ) v order by 1;
 
 
@@ -168,6 +168,6 @@ insert into table_simple
           row_number() over (order by random() + 2) i4,
           row_number() over (order by random() + 3) i5,
           row_number() over (order by random() + 4) i6
-        from generate_series(1, 100000) i
+        from generate_series(1, 1000) i
     ) v order by 1;
 

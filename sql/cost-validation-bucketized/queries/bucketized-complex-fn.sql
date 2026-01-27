@@ -175,8 +175,7 @@ SELECT
     v,
     sum(c5) OVER (PARTITION BY c3) AS sum_c5,
     length(v) * length(v) / 2 AS vlen
-FROM t100000w
-WHERE (yb_hash_code(bucketid, v) % 3) in (0,1,2)  order by bucketid,v;
+FROM t100000w  order by bucketid,v;
 
 
 /*+ IndexScan(t1000000m t1000000m_bucketized_1) */
@@ -232,7 +231,7 @@ FROM (
 ) w
 JOIN t1000000m m
     ON m.c2 = w.c2
-WHERE ((yb_hash_code(w.c1, w.c2) % 3)) = 2
+WHERE w.c1>w.c2
   AND (m.c2 > 10 OR m.c3 < 10000) order by w.c1,w.c2
 LIMIT 900;
 
@@ -341,7 +340,7 @@ order by c2, c3;
 select c2, c3,
        dense_rank() over(order by c3 desc) as dr
 from t1000
-where (yb_hash_code(c2, c3) % 3) in (0,1,2)
+where c2>c3
 order by c2, c3;
 
 select c1, c2, c3,
@@ -365,7 +364,7 @@ order by c1, c2;
 select c2, c4,
        max(c4) over(order by c2) as m
 from t100000
-where (yb_hash_code(c2, c4) % 3) in (0,1,2)
+where c2>c4
 order by c2, c4;
 
 select c2, c3,
@@ -383,7 +382,7 @@ order by c1, c2;
 select c2, v,
        dense_rank() over(order by length(v)) as dr
 from t100000w
-where (yb_hash_code(c2, v) % 3) in (0,1,2)
+where v like '----%'
 order by c2, v;
 
 select c1, c2, c3,
@@ -395,7 +394,7 @@ order by c1, c2;
 select c2, c3,
        row_number() over(partition by c2 order by c3) as rn
 from t1000000m
-where (yb_hash_code(c2, c3) % 3) in (0,1,2)
+where c2>c3
 order by c2, c3;
 
 select c1, c2, c5,
