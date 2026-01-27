@@ -35,167 +35,42 @@ def remove_with_ordinality(sql_str):
     return sql_str
 
 
-def get_result_for_consistency_check_streaming(connection, query_sql: str, is_dml: bool,
-                                                has_order_by: bool, has_limit: bool):
-    """Fetch results for consistency check using server-side cursor for true streaming.
-
-    Uses config.max_rows_for_hash to limit rows included in hash calculation.
-    Server-side cursor ensures we don't load entire result set into memory.
-
-    Returns: (cardinality, result_string, parameters)
-    """
-    config = Config()
-    max_rows = config.max_rows_for_hash or 10000
-
-    if is_dml:
-        # For DML, use regular cursor
-        with connection.cursor() as cur:
-            cur.execute(query_sql)
-            return cur.rowcount, f"{cur.rowcount} updates", None
-
-    # if there is a limit without order by we can't validate results
-    if has_limit and not has_order_by:
-        # Still need to execute to consume/skip
-        with connection.cursor(name='consistency_skip_cursor') as server_cur:
-            server_cur.execute(query_sql)
-            # Don't fetch anything, just close
-        return 0, "LIMIT_WITHOUT_ORDER_BY", None
-
-    str_result = []
-    cardinality = 0
-    warned = False
-
-    # Use server-side cursor (named cursor) for true streaming
-    # This prevents psycopg2 from loading all results into memory
-    with connection.cursor(name='consistency_check_cursor') as server_cur:
-        server_cur.itersize = 1000  # Fetch 1000 rows at a time from server
-        server_cur.execute(query_sql)
-
-        for row in server_cur:
-            cardinality += 1
-            # Only include first N rows in hash to limit memory
-            if cardinality <= max_rows:
-                for column_value in row:
-                    str_result.append(f"{str(column_value)}")
-            elif not warned:
-                config.logger.warning(
-                    f"Result set exceeds max-rows-for-hash ({max_rows}). "
-                    f"Streaming remaining rows without hashing.")
-                warned = True
-
-    if not has_order_by and cardinality <= max_rows:
-        # Only sort if we have all results (sorting partial results is meaningless)
-        str_result.sort()
-
-    # Include cardinality in hash so different-sized results don't collide
-    if cardinality > max_rows:
-        str_result.append(f"__cardinality__{cardinality}")
-
-    return cardinality, ''.join(str_result), None
-
-
 def get_result_for_consistency_check(cur, is_dml: bool, has_order_by: bool, has_limit: bool):
-    """Legacy function - fetches from existing cursor (may cause OOM on large results)."""
-    config = Config()
-    max_rows = config.max_rows_for_hash or 10000
-
     if is_dml:
         return cur.rowcount, f"{cur.rowcount} updates"
-
-    if has_limit and not has_order_by:
-        _discard_cursor_results(cur)
-        return 0, "LIMIT_WITHOUT_ORDER_BY"
-
+    
+    # if there is a limit without order by we can't validate results
     str_result = []
     cardinality = 0
-    warned = False
+    if has_limit and not has_order_by:
+        str_result = ["LIMIT_WITHOUT_ORDER_BY"]
+    else:
+        result = cur.fetchall()
 
-    while True:
-        rows = cur.fetchmany(1000)
-        if not rows:
-            break
-
-        for row in rows:
+        for row in result:
             cardinality += 1
-            if cardinality <= max_rows:
-                for column_value in row:
-                    str_result.append(f"{str(column_value)}")
-            elif not warned:
-                config.logger.warning(
-                    f"Result set exceeds max-rows-for-hash ({max_rows}). "
-                    f"Using partial hash for consistency check.")
-                warned = True
+            for column_value in row:
+                str_result.append(f"{str(column_value)}")
 
-    if not has_order_by:
-        str_result.sort()
-
-    if cardinality > max_rows:
-        str_result.append(f"__cardinality__{cardinality}")
+        if not has_order_by:
+            str_result.sort()
 
     return cardinality, ''.join(str_result)
 
-
-def get_result(cur, is_dml: bool, is_explain: bool = False):
-    """Fetch query results.
-
-    Args:
-        is_explain: If True, returns raw plan text without building string list.
-
-    Note: This function consumes results from an already-executed cursor.
-    For client-side cursors (default), all data is already in memory from execute().
-    For true streaming, use get_result_streaming() with a server-side cursor.
-    """
+def get_result(cur, is_dml: bool):
     if is_dml:
         return cur.rowcount, f"{cur.rowcount} updates"
 
-    if is_explain:
-        # For EXPLAIN queries, just get the plan text (small result set)
-        rows = cur.fetchall()
-        plan_text = '\n'.join(str(row[0]) for row in rows)
-        return len(rows), plan_text
+    result = cur.fetchall()
 
-    # For regular queries, consume results
-    # Note: With client-side cursor, data is already in memory from execute()
-    # We just need to count and optionally discard
+    str_result = []
     cardinality = 0
+    for row in result:
+        cardinality += 1
+        for column_value in row:
+            str_result.append(f"{str(column_value)}")
 
-    while True:
-        rows = cur.fetchmany(1000)
-        if not rows:
-            break
-        cardinality += len(rows)
-
-    # Don't build str_result - we don't need it for timing, saves memory
-    return cardinality, f"rows={cardinality}"
-
-
-def get_result_streaming(connection, query_sql: str, is_dml: bool):
-    """Fetch query results using server-side cursor for true streaming.
-
-    Use this when you need to fully execute and fetch a large result set
-    without loading everything into memory.
-    """
-    if is_dml:
-        with connection.cursor() as cur:
-            cur.execute(query_sql)
-            return cur.rowcount, f"{cur.rowcount} updates"
-
-    cardinality = 0
-
-    with connection.cursor(name='result_streaming_cursor') as server_cur:
-        server_cur.itersize = 2000
-        server_cur.execute(query_sql)
-
-        for _ in server_cur:
-            cardinality += 1
-
-    return cardinality, f"rows={cardinality}"
-
-
-def _discard_cursor_results(cur):
-    """Consume and discard cursor results to free server resources."""
-    while cur.fetchmany(1000):
-        pass
+    return cardinality, ''.join(str_result)
 
 
 def calculate_avg_execution_time(cur,
@@ -236,21 +111,16 @@ def calculate_avg_execution_time(cur,
             if iteration == 0:
                 # evaluate test query without analyze and collect result hash
                 # using first iteration as a result collecting step
-                # Use server-side cursor for streaming to avoid OOM on large results
-                # Note: prepare_query_execution already called above, session props are set
-                cardinality, result, _ = get_result_for_consistency_check_streaming(
-                    connection, query.get_query(), is_dml, has_order_by, has_limit)
+                # even if EXPLAIN ANALYZE is explain query
+                query.parameters = evaluate_sql(cur, query.get_query())
+                cardinality, result = get_result_for_consistency_check(cur, is_dml, has_order_by, has_limit)
 
                 query.result_cardinality = cardinality
                 query.result_hash = get_md5(result)
             else:
                 if iteration < num_warmup:
-                    # Warmup: use streaming for non-EXPLAIN to avoid OOM
-                    if with_analyze:
-                        query.parameters = evaluate_sql(cur, query_str)
-                        _, result = get_result(cur, is_dml, is_explain=True)
-                    else:
-                        _, result = get_result_streaming(connection, query_str, is_dml)
+                    query.parameters = evaluate_sql(cur, query_str)
+                    _, result = get_result(cur, is_dml)
                 else:
                     if not execution_plan_collected:
                         collect_execution_plan(cur, connection, query, sut_database)
@@ -261,15 +131,13 @@ def calculate_avg_execution_time(cur,
 
                     start_time = current_milli_time()
 
+                    evaluate_sql(cur, query_str)
+                    config.logger.debug("SQL >> Getting results")
+                    _, result = get_result(cur, is_dml)
+
                     if with_analyze:
-                        # EXPLAIN ANALYZE - small result set, use regular cursor
-                        evaluate_sql(cur, query_str)
-                        config.logger.debug("SQL >> Getting results")
-                        _, result = get_result(cur, is_dml, is_explain=True)
                         execution_times.append(extract_execution_time_from_analyze(result))
                     else:
-                        # Raw query - use streaming to avoid OOM
-                        _, result = get_result_streaming(connection, query_str, is_dml)
                         execution_times.append(current_milli_time() - start_time)
         except psycopg2.errors.QueryCanceled:
             # failed by timeout - it's ok just skip optimization

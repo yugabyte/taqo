@@ -4,7 +4,6 @@ import psycopg2
 from tqdm import tqdm
 
 from actions.collects.pg_unit import PgUnitGenerator
-from collect import IncrementalResultsWriter
 from config import Config, DDLStep
 from models.factory import get_test_model
 from objects import EXPLAIN, ExplainFlags
@@ -41,6 +40,8 @@ class CollectAction:
             return ""
 
     def evaluate(self):
+        loader = self.config.database.get_results_loader()
+
         self.start_db()
         try:
             self.sut_database.create_test_database()
@@ -52,34 +53,14 @@ class CollectAction:
                 loq.git_message, loq.db_version = self.sut_database.get_revision_version(cur)
                 loq.database_config = self.sut_database.get_database_config(cur)
 
-            # Use incremental writer for memory efficiency
-            incremental_writer = IncrementalResultsWriter(self.config.output)
-            try:
-                loq.ddl_execution_time, loq.model_execution_time, loq.model_queries = (
-                    self.run_ddl_and_testing_queries(
-                        self.sut_database.connection.conn,
-                        self.config.with_optimizations,
-                        loq,
-                        incremental_writer))
+            loq.ddl_execution_time, loq.model_execution_time, loq.model_queries, loq.queries = (
+                self.run_ddl_and_testing_queries(self.sut_database.connection.conn, self.config.with_optimizations))
 
-                loq.config = str(self.config)
+            loq.config = str(self.config)
 
-                if incremental_writer.queries_written > 0:
-                    # Finalize: consolidate JSONL to JSON and deduplicate
-                    stats = incremental_writer.finalize()
-                    if stats:
-                        total_opts, deduped = stats
-                        self.logger.info(
-                            f"Results stored to report/{self.config.output}.json "
-                            f"({incremental_writer.queries_written} queries, "
-                            f"{total_opts - deduped}/{total_opts} optimizations)")
-                    else:
-                        self.logger.info(
-                            f"Results stored to report/{self.config.output}.json "
-                            f"({incremental_writer.queries_written} queries)")
-            except Exception:
-                incremental_writer.finish()
-                raise
+            if loq.queries:
+                self.logger.info(f"Storing results to report/{self.config.output}")
+                loader.store_queries_to_file(loq, self.config.output)
         except Exception as e:
             self.logger.exception(e)
             raise e
@@ -90,9 +71,7 @@ class CollectAction:
 
     def run_ddl_and_testing_queries(self,
                                     connection,
-                                    evaluate_optimizations=False,
-                                    loq=None,
-                                    incremental_writer=None):
+                                    evaluate_optimizations=False):
         try:
             model = get_test_model()
 
@@ -114,24 +93,18 @@ class CollectAction:
             self.logger.exception("Failed to evaluate DDL queries", e)
             exit(1)
 
-        # Start incremental writer with metadata (before query evaluation)
-        if incremental_writer and loq:
-            loq.ddl_execution_time = ddl_execution_time
-            loq.model_queries = model_queries
-            incremental_writer.start(loq)
-
         connection.autocommit = False
         model_start_time = current_milli_time()
-        self.evaluate_testing_queries(connection, queries, evaluate_optimizations, incremental_writer)
+        self.evaluate_testing_queries(connection, queries, evaluate_optimizations)
         model_execution_time = int((current_milli_time() - model_start_time) / 1000)
 
         PgUnitGenerator().generate_postgres_unit_tests(teardown_queries,
                                                        create_queries,
                                                        queries)
 
-        return ddl_execution_time, model_execution_time, model_queries
+        return ddl_execution_time, model_execution_time, model_queries, queries
 
-    def evaluate_testing_queries(self, conn, queries, evaluate_optimizations, incremental_writer=None):
+    def evaluate_testing_queries(self, conn, queries, evaluate_optimizations):
         counter = 1
         for original_query in queries:
             with conn.cursor() as cur:
@@ -184,11 +157,6 @@ class CollectAction:
                     self.logger.info(original_query)
                     raise e
                 finally:
-                    # Write query results incrementally and free memory
-                    if incremental_writer:
-                        incremental_writer.write_query(original_query)
-                        # Clear optimizations to free memory - data is now on disk
-                        original_query.optimizations = None
                     counter += 1
 
             conn.rollback()
@@ -270,9 +238,13 @@ class CollectAction:
         execution_plans_checked = set()
 
         for optimization in progress_bar:
+            # in case of enable statistics enabled
+            # we can get failure here and throw timeout
+            original_query.optimizations.append(optimization)
+
             # set maximum execution time if this is first query,
             # or we are evaluating queries near best execution time
-            if self.config.look_near_best_plan or len(original_query.optimizations) == 0:
+            if self.config.look_near_best_plan or len(original_query.optimizations) == 1:
                 self.set_query_timeout_based_on_previous_execution(cur, min_execution_time, original_query)
 
             # check that execution plan is unique
@@ -286,40 +258,34 @@ class CollectAction:
             exec_plan_md5 = get_md5(optimization.cost_off_explain.get_clean_plan())
             not_unique_plan = exec_plan_md5 in execution_plans_checked
             execution_plans_checked.add(exec_plan_md5)
-
-            if not_unique_plan:
-                # Skip duplicate plans - don't add to optimizations list (memory savings)
-                duplicates += 1
-                continue
-
             query_str = optimization.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
                 if self.config.server_side_execution else None
 
-            try:
-                self.sut_database.prepare_query_execution(cur, optimization)
-                evaluate_sql(cur, optimization.get_explain(EXPLAIN))
-                default_execution_plan = database.get_execution_plan(
-                    '\n'.join(str(item[0]) for item in cur.fetchall())
-                )
-            except psycopg2.errors.QueryCanceled as e:
-                # failed by timeout in getting EXPLAIN - issue
-                self.logger.exception(f"Getting default execution plan failed with {e}")
-                continue
+            if not_unique_plan:
+                duplicates += 1
+            else:
+                try:
+                    self.sut_database.prepare_query_execution(cur, optimization)
+                    evaluate_sql(cur, optimization.get_explain(EXPLAIN))
+                    default_execution_plan = database.get_execution_plan(
+                        '\n'.join(str(item[0]) for item in cur.fetchall())
+                    )
+                except psycopg2.errors.QueryCanceled as e:
+                    # failed by timeout in getting EXPLAIN - issue
+                    self.logger.exception(f"Getting default execution plan failed with {e}")
+                    continue
 
-            if self.config.plans_only:
-                original_query.execution_plan = default_execution_plan
-                original_query.execution_time_ms = default_execution_plan.get_estimated_cost()
-            elif not calculate_avg_execution_time(
-                    cur,
-                    optimization,
-                    self.sut_database,
-                    query_str=query_str,
-                    num_retries=int(self.config.num_retries),
-                    connection=connection):
-                timed_out += 1
-
-            # Only add unique, successfully evaluated optimizations
-            original_query.optimizations.append(optimization)
+                if self.config.plans_only:
+                    original_query.execution_plan = default_execution_plan
+                    original_query.execution_time_ms = default_execution_plan.get_estimated_cost()
+                elif not calculate_avg_execution_time(
+                        cur,
+                        optimization,
+                        self.sut_database,
+                        query_str=query_str,
+                        num_retries=int(self.config.num_retries),
+                        connection=connection):
+                    timed_out += 1
 
             # get new minimum execution time
             if 0 < optimization.execution_time_ms < min_execution_time:
@@ -328,7 +294,7 @@ class CollectAction:
             progress_bar.set_postfix(
                 {'skipped': f"(dp: {duplicates}, to: {timed_out})", 'min_time_ms': "{:.2f}".format(min_execution_time)})
 
-        return original_query.optimizations
+        return list_of_optimizations
 
     def set_query_timeout_based_on_previous_execution(self, cur, min_execution_time, original_query):
         optimizer_query_timeout = \

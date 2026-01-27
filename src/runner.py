@@ -354,7 +354,6 @@ if __name__ == "__main__":
         compaction_timeout=int(configuration.get("compaction-timeout", 120)),
         look_near_best_plan=get_bool_from_object(configuration.get("look-near-best-plan", True)),
         all_pairs_threshold=int(configuration.get("all-pairs-threshold", 3)),
-        max_rows_for_hash=int(configuration.get("max-rows-for-hash", 10000)),
 
         num_queries=int(args.num_queries)
         if args.num_queries is not None else configuration.get("num-queries", -1),
