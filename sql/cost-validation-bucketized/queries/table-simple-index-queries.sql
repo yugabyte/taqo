@@ -1,7 +1,7 @@
 SELECT c1, c2 FROM table_simple WHERE bucketid IN (0,1,2) ORDER BY c1, c2;
 SELECT c1, c2 FROM table_simple WHERE c1 + c2 < 100 AND c1 > c2 ORDER BY c1, c2;
 SELECT c2, c3 FROM table_simple WHERE c2 >= 0 AND c3 >= 1 AND (c2 + c3 * 3) % 7 < 5 ORDER BY c2, c3;
-SELECT c2, c4 FROM table_simple WHERE (yb_hash_code(c2, c4) % 3) IN (0,1,2) AND c2 = 10 ORDER BY c2, c4;
+SELECT c2, c4 FROM table_simple WHERE c2 = 10 ORDER BY c2, c4;
 SELECT c1, c2 FROM table_simple WHERE bucketid IN (0,1,2) AND c1 BETWEEN 10 AND 20 ORDER BY c1, c2;
 SELECT c2, c4 FROM table_simple WHERE c2 * 3 + c4 < 10000 AND MOD(c2 + c4, 13) <= 8 ORDER BY c2, c4;
 SELECT c1, v FROM table_simple WHERE c1 > length(v) ORDER BY c1, v;
@@ -49,5 +49,27 @@ SELECT m.c1, m.c2, m.c3, t.c4 FROM table_simple t JOIN table_simple m ON m.c1 = 
 SELECT m.c1, m.c2, w.v FROM table_simple w JOIN table_simple m ON m.c1 = w.c1 AND m.c2 = w.c2 WHERE sign(w.c1 - w.c2) = 1 and m.c2=10 ORDER BY w.c1, w.c2;
 SELECT m.c1, m.c2, w.v, t.c3 FROM table_simple m JOIN table_simple w ON w.c1 = m.c1 AND abs(w.c2 - m.c2) = 0 and m.c1=100 JOIN table_simple t ON t.c2 = m.c2 WHERE sign(m.c1 - m.c2) >= 0 ORDER BY m.c1, m.c2;
 SELECT m.c1, m.c2, w.v FROM table_simple m JOIN table_simple w ON w.c1 = m.c1 AND abs(w.c2 - m.c2) = 0 WHERE (m.c3 IN (5, 10, 15) OR m.c4 BETWEEN 100 AND 200) AND m.c1 >= m.c2 ORDER BY m.c1, m.c2;
-SELECT m.c1, m.c2 FROM table_simple m WHERE EXISTS (SELECT 1 FROM table_simple w WHERE w.c1 = m.c1 AND w.c2 = m.c2 AND (yb_hash_code(w.c1, w.c2) % 3) IN (0,1,2)) ORDER BY m.c1, m.c2;
 SELECT a.c1, a.c2, b.c3 FROM table_simple a JOIN table_simple b ON a.c1 = b.c1 AND a.c2 = b.c2 WHERE a.c1 > a.c2 AND b.c1 < b.c2 + 10 and b.c1=20 and a.c1=10 ORDER BY a.c1, a.c2;
+-- create or replace function bucketed_or_full_scan_simple()
+-- returns table (c1 int, c2 int)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   select m.c1, m.c2
+--   from table_simple m
+--   where exists (
+--     select 1
+--     from table_simple w
+--     where w.c1 = m.c1
+--       and w.c2 = m.c2
+--       and (yb_hash_code(w.c1, w.c2) % 3) in (0,1,2)
+--   )
+--   order by m.c1, m.c2;
+-- exception when others then
+--   return query
+--   select *
+--   from table_simple;
+-- end;
+-- $$;
+-- select * from bucketed_or_full_scan_simple();

@@ -9,13 +9,13 @@ SELECT c1,c2 FROM t100 WHERE bucketid in (0,1,2) and c1>c2 order by c1,c2;
 SELECT c1,c2 FROM t100 WHERE bucketid in (0,1,2) and c2>c1 order by c1,c2;
 SELECT c2, c4 FROM t1000 WHERE MOD(c2, 7) + MOD(c4, 5) <= 10 AND c2 * 2 > c4 ORDER BY c2, c4;
 SELECT c2, c3 FROM t1000 WHERE c2 >= 0 AND c3 >= 1 AND (c2 + c3 * 3) % 7 < 5 AND c2 < c3 * 2 + 50 ORDER BY c2, c3;
-SELECT c2, c3 FROM t1000 WHERE (yb_hash_code(c2, c3) % 3) IN (0,1,2) and c2 >= -1 and c3 >= c2 order by c2,c3;
-SELECT c2, c4 FROM t1000 WHERE (yb_hash_code(c2, c4) % 3) IN (0,1, 2) and c2=10 order by c2,c4;
+SELECT c2, c3 FROM t1000 WHERE c2 >= -1 and c3 >= c2 order by c2,c3;
+SELECT c2, c4 FROM t1000 WHERE  c2=10 order by c2,c4;
 SELECT c1, c2 FROM t10000 WHERE bucketid in (0,1,2) order by c1,c2;
 SELECT c2, c4 FROM t10000 WHERE c2 * 3 + c4 < 10000 AND MOD(c2 + c4, 13) <= 8 ORDER BY c2, c4;
-SELECT c2, c4 FROM t10000 WHERE (yb_hash_code(c2, c4) % 3) in (0,1,2) and c2=10 order by c2,c4;
+SELECT c2, c4 FROM t10000 WHERE c2=10 order by c2,c4;
 SELECT c1, c2 FROM t10000 WHERE c1 > c2 AND (c1 - c2) % 9 <= 6 AND c1 + c2 * 2 < 15000 ORDER BY c1, c2;
-SELECT c1, c2 FROM t10000 WHERE (yb_hash_code(c2, c1) % 3) in (0,1,2) and c1>10 and c2>10 order by c1,c2;
+SELECT c1, c2 FROM t10000 WHERE c1>10 and c2>10 order by c1,c2;
 SELECT c1,v FROM t10000 WHERE c1>length(v) order by c1,v;
 SELECT c1,v FROM t10000 WHERE length(v) between 10 and 20 order by c1,v;
 SELECT c1,v FROM t10000 WHERE length(trim(v)) > 1000 order by c1,v;
@@ -26,26 +26,80 @@ SELECT c1,v FROM t10000 WHERE  length(v)=4 or c2>10 order by c1,v;
 SELECT c1,v FROM t10000 WHERE length(v)=4 or c2>10 and c4 between 10 and 20 order by c1,v;
 SELECT c2,c3,c4 FROM t10000 WHERE c3>c4 order by c2,c3,c4;
 SELECT c1, c2, c3, c4 FROM t100000 WHERE bucketid in (0,2,1) order by c1,c2;
-/*+IndexScan (t100000 t100000_bucketized_1)*/ SELECT c2, c3 FROM t100000 WHERE (yb_hash_code(c2, c3)%3) in (0,2,1) order by c2,c3;
-/*+ IndexScan(t100000 t100000_bucketized_2) */SELECT c2, c3, c4 FROM t100000 WHERE (yb_hash_code(c2, c4) % 3) in (0,1,2) and c3 IS NOT NULL order by c2,c4;
+-- create or replace function bucketed_or_full_scan_hint()
+-- returns table (c2 int, c3 int)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   /*+IndexScan (t100000 t100000_bucketized_1)*/
+--   select c2, c3
+--   from t100000
+--   where (yb_hash_code(c2, c3)%3) in (0,2,1)
+--   order by c2, c3;
+-- exception when others then
+--   return query
+--   select c2, c3
+--   from t100000;
+-- end;
+-- $$;
+-- select * from bucketed_or_full_scan_hint();
+--
+-- create or replace function bucketed_or_full_scan_hint_2()
+-- returns table (c2 int, c3 int, c4 int)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   /*+ IndexScan(t100000 t100000_bucketized_2) */
+--   select c2, c3, c4
+--   from t100000
+--   where (yb_hash_code(c2, c4) % 3) in (0,1,2)
+--     and c3 is not null
+--   order by c2, c4;
+-- exception when others then
+--   return query
+--   select c2, c3, c4
+--   from t100000;
+-- end;
+-- $$;
+-- select * from bucketed_or_full_scan_hint_2();
+
+-- create or replace function bucketed_or_full_scan_hint_3()
+-- returns table (c1 int, c2 int, c3 int, c4 int)
+-- language plpgsql
+-- as $$
+-- begin
+--   return query
+--   /*+ IndexScan(t100000w t100000w_bucketized_1) */
+--   select c1, c2, c3, c4
+--   from t100000w
+--   where (yb_hash_code(c2, c3) % 3) in (0,2,1)
+--     and v like '----%'
+--   order by c2, c3;
+-- exception when others then
+--   return query
+--   select c1, c2, c3, c4
+--   from t100000w;
+-- end;
+-- $$;
+-- select * from bucketed_or_full_scan_hint_3();
+
+
 SELECT c1, c2, c3, c4 FROM t100000w WHERE c1 % 19 + c2 % 11 < 20 AND c1 * 2 > c2 + 100 ORDER BY c1, c2;
 SELECT c1, c2, c3, c4 FROM t100000w WHERE bucketid in (0,2,1) and c1=10 order by c1,c2;
 set enable_seqscan to false;
-/*+IndexScan(t100000w t100000w_bucketized_1)*/SELECT c1, c2, c3, c4 FROM t100000w WHERE (yb_hash_code(c2, c3) % 3) in (0,2,1)  order by c2,c3;
-/*+IndexScan(t100000w t100000w_bucketized_1)*/SELECT c1, c2, c3, c4 FROM t100000w WHERE (yb_hash_code(c2, c3) % 3) in (0,2,1)  and v like '----%'  order by c2,c3;
-/*+IndexScan(t100000w t100000w_bucketized_1)*/SELECT c1, c2, c3, c4 FROM t100000w WHERE (yb_hash_code(c2, c3) % 3) in (0,2,1) and c2 between 10 and 1000 order by c2,c3;
-/*+IndexScan(t100000w t100000w_bucketized_4)*/SELECT bucketid FROM t100000w WHERE (yb_hash_code(bucketid, v) % 3) in (0,2,1)  order by bucketid,v;
+/*+IndexScan(t100000w t100000w_bucketized_1)*/SELECT c1, c2, c3, c4 FROM t100000w WHERE abs(c2) % 3 in (0,2,1)  order by c2,c3;
+/*+IndexScan(t100000w t100000w_bucketized_1)*/SELECT c1, c2, c3, c4 FROM t100000w WHERE c2 between 10 and 1000 order by c2,c3;
+/*+IndexScan(t100000w t100000w_bucketized_4)*/SELECT bucketid FROM t100000w where v like '----%'  order by bucketid,v;
 /*+IndexScan(t100000w t100000w_bucketized_5)*/SELECT c2,v FROM t100000w WHERE c2>length(v)  order by c2,v;
 /*+IndexScan(t100000w t100000w_bucketized_5)*/SELECT c2,v FROM t100000w WHERE  v like '----%' order by c2,v;
 SELECT c1, c2, c3, c4 FROM t1000000m WHERE bucketid in (0,2,1) order by c1,c2;
 SELECT c1, c2, c3, c4 FROM t1000000m WHERE bucketid in (0,2,1) and c2=10 order by c1,c2;
 /*+IndexScan(t1000000m_bucketized_1)*/SELECT c2, c3, c4 FROM t100000w WHERE MOD(c2 + c3, 29) <= 20 AND c2 * 4 < c3 * 5 + 10000 ORDER BY c2, c3;
-/*+IndexScan(t1000000m_bucketized_1)*/SELECT c2, c3, c4 FROM t100000w WHERE (yb_hash_code(c2, c3) % 3) in (0,2,1) and c2=10 order by c2,c3;
-/*+IndexScan(t1000000m_bucketized_2)*/SELECT c2,c4 FROM t100000w WHERE (yb_hash_code(c2, c4) % 3) in (0,2,1) and c2>c4 order by c2,c4;
-/*+IndexScan(t1000000m_bucketized_3)*/SELECT c1,c2,c3 FROM t100000w WHERE (yb_hash_code(c1, c2) % 3) in (0,2,1) and c1>c2 order by c1,c2;
-/*+IndexScan(t1000000m_bucketized_4)*/SELECT bucketid,c6 FROM t100000w WHERE (yb_hash_code(bucketid, c6) % 3) in (0,2,1) order by bucketid,c6;
-/*+IndexScan(t1000000m_bucketized_4)*/SELECT bucketid,c6 FROM t100000w WHERE (yb_hash_code(bucketid, c6) % 3) in (0,2,1) and bucketid =2 order by bucketid,c6;
-/*+IndexScan(t1000000m_bucketized_5)*/SELECT c2,c5 FROM t100000w WHERE (yb_hash_code(c2, c5) % 3) in (0,2,1) order by c2,c5;
+/*+IndexScan(t1000000m_bucketized_1)*/SELECT c2, c3, c4 FROM t100000w WHERE  c2=10 order by c2,c3;
+/*+IndexScan(t1000000m_bucketized_2)*/SELECT c2,c4 FROM t100000w WHERE  c2>c4 order by c2,c4;
+/*+IndexScan(t1000000m_bucketized_3)*/SELECT c1,c2,c3 FROM t100000w WHERE  c1>c2 order by c1,c2;
 select c1, c2, c4 from t100000 where c4 <> 0 AND c1 % 13 + c2 % 11 < 18 AND c1 > c2 order by c1, c2;
 select c2, v from t100000w where v like 'aa%' AND c2 % 17 < 12 AND LENGTH(v) > 3 order by c2, v;
 select c1, c2, c3, c4 from t100000w where c3 between 5 and 500 AND c1 * 2 + c2 < 20000 AND MOD(c1 + c2, 19) <= 14 order by c1, c2;
