@@ -132,6 +132,7 @@ class Query:
 
     execution_plan: 'ExecutionPlan' = dataclasses.field(default_factory=ExecutionPlan)
     execution_time_ms: float = 0
+    execution_time_list: List[float] = dataclasses.field(default_factory=list)
     result_cardinality: int = 0
     result_hash: str = None
     has_order_by: bool = False
@@ -146,6 +147,7 @@ class Query:
     def create_copy(self):
         return Query(self.tag, self.query, self.query_hash, self.tables,
                      execution_time_ms=-1,
+                     execution_time_list=[],
                      has_order_by=self.has_order_by,
                      explain_hints=self.explain_hints,
                      execution_plan=ExecutionPlan("NOT FOUND"),

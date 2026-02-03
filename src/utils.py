@@ -141,12 +141,14 @@ def calculate_avg_execution_time(cur,
                         execution_times.append(current_milli_time() - start_time)
         except psycopg2.errors.QueryCanceled:
             # failed by timeout - it's ok just skip optimization
+            query.execution_time_list = []
             query.execution_time_ms = -1
             config.logger.debug(
                 f"Skipping optimization due to timeout limitation:\n{query_str}")
             return False
         except psycopg2.errors.DatabaseError as ie:
             # Some serious problem occurred - probably an issue
+            query.execution_time_list = []
             query.execution_time_ms = 0
             config.logger.error(f"INTERNAL ERROR {ie}\nSQL query:\n{query_str}")
             traceback.print_exc(limit=None, file=None, chain=True)
@@ -170,7 +172,8 @@ def calculate_avg_execution_time(cur,
                 actual_evaluations += 1
 
     # TODO convert execution_time_ms into a property
-    query.execution_time_ms = sum(execution_times) / len(execution_times)
+    query.execution_time_list = execution_times
+    query.execution_time_ms = sum(execution_times) / len(execution_times) if execution_times else 0
 
     if config.yugabyte_collect_stats:
         sut_database.collect_query_statistics(cur, query, query_str)
@@ -204,6 +207,7 @@ def collect_execution_plan(cur,
         # failed by timeout - it's ok just skip optimization
         Config().logger.debug(f"Getting execution plan failed with {e}")
 
+        query.execution_time_list = []
         query.execution_time_ms = 0
         query.execution_plan = sut_database.get_execution_plan("")
 

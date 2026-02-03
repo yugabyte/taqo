@@ -133,6 +133,7 @@ class CollectAction:
                     self.define_min_execution_time(conn, cur, original_query)
 
                     if self.config.plans_only:
+                        original_query.execution_time_list = []
                         original_query.execution_time_ms = default_execution_plan.get_estimated_cost()
                     else:
                         query_str = original_query.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
@@ -277,6 +278,7 @@ class CollectAction:
 
                 if self.config.plans_only:
                     original_query.execution_plan = default_execution_plan
+                    original_query.execution_time_list = []
                     original_query.execution_time_ms = default_execution_plan.get_estimated_cost()
                 elif not calculate_avg_execution_time(
                         cur,
