@@ -11,7 +11,7 @@ create index t100_bucketized_1 on t100 ((yb_hash_code(c2, c3) % 3), c2, c3);
 create index t100_bucketized_2 on t100 ((yb_hash_code(c2, c3) % 3), c2, c4, c3); -- have an extra column in index reversed
 create index t100_bucketized_3 on t100 ((yb_hash_code(c2, c3) % 3), c2, c3, c4); -- have an extra column in index
 create index t100_bucketized_4 on t100 ((yb_hash_code(c2, v) % 3), c2, v); -- have v (char) instead
-create index t100_bucketized_5 on t100 ((yb_hash_code(c2, c3) % 3), c2, c3) SPLIT INTO 2 TABLETS; -- index split into tablets.
+create index t100_bucketized_5 on t100 ((yb_hash_code(c2, c3) % 3), c2, c3);
 create index t100_bucketized_6 on t100 ((yb_hash_code(c2, c4) % 3), c2, c4); -- make one with c4 to alter c4 type to bigint later
 
 -- some table alters to test
