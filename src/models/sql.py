@@ -6,6 +6,7 @@ from typing import List
 
 import psycopg2
 import sqlparse
+from sqlparse.exceptions import SQLParseError
 from sqlparse.sql import Comment
 from tqdm import tqdm
 
@@ -322,7 +323,13 @@ class SQLModel(QTFModel):
                 query_tips = self.get_query_hint_tips(full_queries)
                 query_debug_queries = []
                 for file_query in full_queries.split(";"):
-                    if cleaned := sqlparse.format(file_query.lstrip(), strip_comments=True).strip():
+                    try:
+                        cleaned = sqlparse.format(file_query.lstrip(), strip_comments=True).strip()
+                    except SQLParseError:
+                        # sqlparse may fail on very large queries (token limit),
+                        # fall back to using the query without stripping comments
+                        cleaned = file_query.strip()
+                    if cleaned:
                         if cleaned.lower().startswith("set "):
                             query_debug_queries.append(cleaned)
                         else:
