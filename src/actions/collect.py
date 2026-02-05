@@ -104,9 +104,20 @@ class CollectAction:
 
         return ddl_execution_time, model_execution_time, model_queries, queries
 
+    def _reconnect(self, conn):
+        """Reconnect to the database if the connection is closed."""
+        if conn.closed:
+            self.logger.warning("Connection lost, reconnecting...")
+            self.sut_database.establish_connection(self.config.connection.database)
+            conn = self.sut_database.connection.conn
+            conn.autocommit = False
+        return conn
+
     def evaluate_testing_queries(self, conn, queries, evaluate_optimizations):
         counter = 1
         for original_query in queries:
+            conn = self._reconnect(conn)
+
             with conn.cursor() as cur:
                 try:
                     self.logger.info(
@@ -159,7 +170,8 @@ class CollectAction:
                 finally:
                     counter += 1
 
-            conn.rollback()
+            if not conn.closed:
+                conn.rollback()
 
     def validate_result_hash(self, original_query):
         if "skip_consistency_check" in original_query.optimizer_tips.tags:

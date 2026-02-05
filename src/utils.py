@@ -377,15 +377,15 @@ def evaluate_sql(cur: cursor, sql: str, force_warning: bool = False, mute_except
         except psycopg2.errors.QueryCanceled as e:
             if not mute_exceptions:
                 config.logger.debug(f"UNSTABLE: {sql_wo_parameters}", sql)
-            cur.connection.rollback()
+            _safe_rollback(cur.connection)
             raise e
         except psycopg2.errors.DuplicateDatabase as ddb:
-            cur.connection.rollback()
+            _safe_rollback(cur.connection)
 
             if not mute_exceptions:
                 config.logger.exception(f"UNSTABLE: {sql}[{parameters}]", ddb)
         except psycopg2.errors.ConfigurationLimitExceeded as cle:
-            cur.connection.rollback()
+            _safe_rollback(cur.connection)
 
             if not mute_exceptions:
                 config.logger.exception(f"UNSTABLE: {sql}[{parameters}]", cle)
@@ -397,7 +397,7 @@ def evaluate_sql(cur: cursor, sql: str, force_warning: bool = False, mute_except
             if config.exit_on_fail:
                 exit(1)
         except psycopg2.OperationalError as oe:
-            cur.connection.rollback()
+            _safe_rollback(cur.connection)
 
             if not mute_exceptions:
                 config.logger.exception(f"UNSTABLE: {sql}[{parameters}]", oe)
@@ -409,7 +409,7 @@ def evaluate_sql(cur: cursor, sql: str, force_warning: bool = False, mute_except
             if config.exit_on_fail:
                 exit(1)
         except Exception as e:
-            cur.connection.rollback()
+            _safe_rollback(cur.connection)
 
             if not mute_exceptions:
                 config.logger.exception(f"UNSTABLE: {sql}[{parameters}]", e)
@@ -427,18 +427,18 @@ def evaluate_sql(cur: cursor, sql: str, force_warning: bool = False, mute_except
             config.logger.debug(f"SQL >> {sql_wo_parameters}")
             cur.execute(sql_wo_parameters)
         except psycopg2.errors.QueryCanceled as e:
-            cur.connection.rollback()
+            _safe_rollback(cur.connection)
 
             if not mute_exceptions:
                 config.logger.debug(f"UNSTABLE: {sql_wo_parameters}", sql_wo_parameters)
             raise e
         except psycopg2.errors.DuplicateDatabase as ddb:
-            cur.connection.rollback()
+            _safe_rollback(cur.connection)
 
             if not mute_exceptions:
                 config.logger.exception(f"UNSTABLE: {sql_wo_parameters}", ddb)
         except psycopg2.errors.ConfigurationLimitExceeded as cle:
-            cur.connection.rollback()
+            _safe_rollback(cur.connection)
 
             if not mute_exceptions:
                 config.logger.exception(f"UNSTABLE: {sql_wo_parameters}", cle)
@@ -450,7 +450,7 @@ def evaluate_sql(cur: cursor, sql: str, force_warning: bool = False, mute_except
             if config.exit_on_fail:
                 exit(1)
         except psycopg2.OperationalError as oe:
-            cur.connection.rollback()
+            _safe_rollback(cur.connection)
 
             if not mute_exceptions:
                 config.logger.exception(f"UNSTABLE: {sql_wo_parameters}", oe)
@@ -462,7 +462,7 @@ def evaluate_sql(cur: cursor, sql: str, force_warning: bool = False, mute_except
             if config.exit_on_fail:
                 exit(1)
         except Exception as e:
-            cur.connection.rollback()
+            _safe_rollback(cur.connection)
 
             if not mute_exceptions:
                 config.logger.exception(f"UNSTABLE: {sql_wo_parameters}", e)
@@ -546,3 +546,12 @@ def seconds_to_readable_minutes(seconds):
     minutes = seconds // 60
     remaining_seconds = seconds % 60
     return f"{minutes} minute{'s' if minutes != 1 else ''} and {remaining_seconds:.2f} second{'s' if remaining_seconds != 1 else ''}"
+
+
+def _safe_rollback(conn):
+    """Attempt rollback, silently ignoring if connection is already closed."""
+    try:
+        if not conn.closed:
+            conn.rollback()
+    except psycopg2.InterfaceError:
+        pass
