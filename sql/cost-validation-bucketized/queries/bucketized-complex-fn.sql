@@ -1,4 +1,3 @@
-/*+ IndexScan(t100 t100_bucketized_3) */
 SELECT
     c2,
     c3,
@@ -10,7 +9,6 @@ FROM t100
 WHERE c2 BETWEEN 10 AND 90
   AND c3 IS NOT NULL;
 
-/*+ IndexScan(t100 t100_bucketized_3) */
 SELECT
     c2,
     c3,
@@ -21,7 +19,6 @@ SELECT
 FROM t100
 WHERE c2 > 20 order by c2,c3;
 
-/*+ IndexScan(t100 t100_bucketized_2) */
 SELECT c2,
     c3,
     dense_rank() OVER (PARTITION BY c2 ORDER BY c2,c3) AS dr,
@@ -60,7 +57,6 @@ SELECT
     count(*) OVER (PARTITION BY c3) AS freq
 FROM t1000 WHERE c2 BETWEEN 100 AND 900 order by c2,c3;
 
-/*+ IndexScan(t1000 t1000_bucketized_2) */
 SELECT
     c2,
     c4,
@@ -70,7 +66,6 @@ FROM t1000 order by c2,c4;
 
 
 
-/*+ IndexScan(t1000 t1000_bucketized_1) */
 SELECT
     c2,
     c3,
@@ -80,7 +75,6 @@ FROM t1000
 WHERE c2 BETWEEN 100 AND 900;
 
 
-/*+ IndexScan(t10000 t10000_bucketized_1) */
 SELECT
     c2,
     c3,
@@ -89,7 +83,6 @@ SELECT
 FROM t10000 order by c2,c3;
 
 
-/*+ IndexScan(t10000 t10000_bucketized_4) */
 SELECT
     c2,
     length(v) AS vlen,
@@ -97,7 +90,6 @@ SELECT
 FROM t10000 order by c2,v;
 
 
-/*+ IndexScan(t10000 t10000_bucketized_partition_1) */
 SELECT
     c2,
     length(v) AS vlen,
@@ -105,7 +97,6 @@ SELECT
 FROM t10000 where v like '--%' order by c2,v;
 
 
-/*+ IndexScan(t10000 t10000_bucketized_partition_2 t10000_bucketized_partition_3 t10000_bucketized_partition_4 t10000_bucketized_partition_def) */
 SELECT
     c2,
     c3,
@@ -114,7 +105,6 @@ SELECT
 FROM t10000 order by c2,c3;
 
 
-/*+ IndexScan(t10000 t10000_bucketized_partition_4 t10000_bucketized_partition_def) */
 SELECT
     c2,
     length(v) AS vlen,
@@ -124,7 +114,6 @@ WHERE c2 BETWEEN 30 AND 100
   AND v IS NOT NULL order by c1,c2;
 
 
-/*+ IndexScan(t100000 t100000_bucketized_1) */
 SELECT
     c2,
     c3,
@@ -133,7 +122,6 @@ SELECT
 FROM t100000 order by c2,c3;
 
 
-/*+ IndexScan(t100000 t100000_bucketized_2) */
 SELECT
     c2,
     c4,
@@ -141,7 +129,6 @@ SELECT
 FROM t100000 where c2>c4 order by c2,c4;
 
 
-/*+ IndexScan(t100000w t100000w_bucketized_5) */
 SELECT
     c2,
     length(v) AS vlen,
@@ -151,7 +138,6 @@ WHERE c2 BETWEEN 100 AND 900
   AND v IS NOT NULL order by c2,v;
 
 
-/*+ IndexScan(t100000w t100000w_bucketized_1) */
 SELECT
     c2,
     c3,
@@ -160,7 +146,6 @@ FROM t100000w  order by c2,c3;
 
 
 
-/*+ IndexScan(t100000w t100000w_bucketized_3) */
 SELECT
     c1,
     c2,
@@ -169,7 +154,6 @@ FROM t100000w where v like '--%' order by c1,c2;
 
 
 
-/*+ IndexScan(t100000w t100000w_bucketized_4) */
 SELECT
     bucketid,
     v,
@@ -178,7 +162,6 @@ SELECT
 FROM t100000w  order by bucketid,v;
 
 
-/*+ IndexScan(t1000000m t1000000m_bucketized_1) */
 SELECT
     c2,
     c3,
@@ -188,7 +171,6 @@ FROM t1000000m
 WHERE c2 BETWEEN 1000005 AND 1005000;
 
 
-/*+ IndexScan(t1000000m t1000000m_bucketized_2) */
 SELECT
     c2,
     c4,
@@ -197,7 +179,6 @@ SELECT
 FROM t1000000m
 WHERE c2 BETWEEN 0 AND 1005000 order by c2,c4;
 
-/*+ IndexScan(t1000000m t1000000m_bucketized_5) */
 SELECT
     c2,
     c5,
@@ -206,7 +187,6 @@ FROM t1000000m
 WHERE c5 BETWEEN 1000 AND 90000 order by c2,c5;
 
 
-/*+ IndexScan(t1000000m t1000000m_bucketized_4) */
 SELECT
     bucketid,
     c6,
@@ -261,7 +241,6 @@ FROM t10000_partition_2
 WHERE c2 BETWEEN 25 AND 50 order by c2,c3;
 
 
-/*+ IndexScan(t100000w t100000w_bucketized_5) */
 select
     c2,
     c3,
@@ -272,7 +251,6 @@ from t100000w
 where bucketid in (0,1) and v like '--%';
 
 
-/*+ IndexScan(t100000w t100000w_bucketized_5) */
 WITH t AS (
     SELECT
         c2,
