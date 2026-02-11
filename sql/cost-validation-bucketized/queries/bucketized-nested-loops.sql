@@ -1,16 +1,10 @@
-/*+ NestLoop(t100 t1000 t100000)
-    IndexScan(t100 t100_bucketized_1)
-    IndexScan(t1000 t1000_bucketized_2)
-    IndexScan(t100000 t100000_bucketized_2) */
+
 SELECT t1.c1, t2.c4, t3.c5
 FROM t100 t1
 JOIN t1000 t2 ON t1.c2 = t2.c2
 JOIN t100000 t3 ON t2.c4 = t3.c4
 WHERE t1.c2 BETWEEN 5 AND 500;
 
-/*+ NestLoop(t1000000m t100000)
-    IndexScan(t1000000m t1000000m_bucketized_1)
-    IndexScan(t100000 t100000_bucketized_3) */
 SELECT m.c1, m.c2, t.c3
 FROM t1000000m m
 JOIN t100000 t
@@ -18,7 +12,7 @@ JOIN t100000 t
 WHERE m.c2 > 1000000;
 
 
-SELECT /*+ NestedLoop IndexScan(t100 t100_bucketized_6) */
+SELECT
        t1.c1, t1.c2, t1.c4, t2.c3
 FROM t100 t1
 JOIN t100000 t2
@@ -93,9 +87,6 @@ and least(m.c1, m.c2) >= 0
 order by m.c1, m.c2;
 
 
-/*+
-    IndexScan(t100 t100_bucketized_1)
-    IndexScan(t1000 t1000_bucketized_2) */
 SELECT t1.c1, t1.c2, t2.c4, t2.v
 FROM t100 t1
 JOIN t1000 t2
@@ -103,9 +94,6 @@ JOIN t1000 t2
 WHERE t1.c2 BETWEEN 10 AND 200
   AND t2.c4 IS NOT NULL order by t1.c1,t1.c2;
 
-/*+
-    IndexScan(t100 t100_bucketized_1)
-    IndexScan(t1000 t1000_bucketized_2) */
 SELECT t1.c1, t1.c2, t2.c2, t2.c4
 FROM t100 t1
 JOIN t1000 t2
@@ -114,9 +102,6 @@ WHERE t2.c2>t2.c4
   AND t2.c4 IS NOT NULL order by t2.c2,t2.c4;
 
 
-/*+
-    IndexScan(t100 t100_bucketized_4)
-    IndexScan(t100000w t100000w_bucketized_5) */
 SELECT t1.c2, t1.v, t5.c3
 FROM t100 t1
 JOIN t100000w t5
