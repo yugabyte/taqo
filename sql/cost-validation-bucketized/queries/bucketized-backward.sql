@@ -251,3 +251,17 @@ join filtered f
   on m.c1 = f.c1
 where m.c1>m.c2
 order by m.c1 desc, m.c2 desc;
+
+select c1, c2
+from t100000w
+group by c1, c2
+order by c1 desc, c2 desc limit 10;
+
+
+select m.c1, m.c2, sum(w.c3) as s
+from t1000000m m
+join t100000w w
+  on m.c1 = w.c1
+where m.c1>m.c2 and w.c1>w.c2
+group by m.c1, m.c2
+order by m.c1 desc, m.c2 desc limit 10;

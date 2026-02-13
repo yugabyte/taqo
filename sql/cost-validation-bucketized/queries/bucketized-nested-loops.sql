@@ -738,4 +738,3 @@ SELECT *
 FROM z
 WHERE r < 5
 ORDER BY c1, c2;
-
