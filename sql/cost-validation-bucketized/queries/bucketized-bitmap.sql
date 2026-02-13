@@ -19,7 +19,7 @@ select c3, c4, c5, c1 - c1 from t1000000m where c6 < 1 and c5 < 10 order by c5, 
 select c3, c4, c5, c1 - c1 from t1000000m where c6 < 1000 and c5 < 10000 order by c5, c4, c3 limit 1024;
 select avg(c4) from t1000 where c2 <= 100 and c6 <= 1 limit 100;
 select avg(c4) from t1000 where c2 <= 500 and c6 <= 5 limit 100;
-select avg(c4) from t1000000m where c5 <= 100 and (c4 = 4 or c3 = 4) limit 1000;
+select avg(c4) from t1000000m where c5 <= 100 and (c4 = 4 or c3 = 4) limit 10;
 select avg(c4) from t100000 where c2 <= 10 and c6 <= 1 limit 500;
 select avg(c4) from t1000000m where c5 <= 1000 and (c4 <= 10 or c3 <= 10);
 select avg(c4) from t1000000m where c6 < 1 and c5 < 10;
@@ -45,8 +45,8 @@ select c3, c4, c5 from t1000000m where c5 <= 100000 and (c4 = 4 or c3 = 4) order
 select c3, c4, c5 from t1000000m where c5 <= 100 and (c4 = 4 or c3 = 4) order by c5, c4, c3 limit 1024;
 select c3, c4, c5 from t1000000m where c5 <= 1000 and (c4 <= 10 or c3 <= 10) order by c3, c4, c5 limit 1024;
 select c3, c4, c5 from t1000000m where c5 <= 100000 and (c4 <= 10 or c3 <= 10) order by c5, c4, c3 limit 1024;
-select avg(c3) from t1000000m where c5 <= 100 and (c4 = 4 or c3 = 4) limit 200;
-select avg(c3) from t1000000m where c5 <= 1000 and (c4 <= 10 or c3 <= 10) limit 500;
+select avg(c3) from t1000000m where c5 <= 100 and (c4 = 4 or c3 = 4) limit 100;
+select avg(c3) from t1000000m where c5 <= 1000 and (c4 <= 10 or c3 <= 10) limit 50;
 select avg(c3) from t1000000m where c5 <= 100 and (c4 <= 10 or c3 <= 10) limit 100;
 
 
