@@ -126,7 +126,7 @@ create index table_simple_index_4 on table_simple (c6 asc, v asc);
 
 --------------------------------------------- below table will have only bucketized indexes ---------------------------------------------
 create table table_bucketized (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(1024), bucketid int generated always as ( yb_hash_code(c1, c2) % 3 ) STORED, primary key (bucketid asc, c1, c2));
-create index table_bucketized_only_index_1 on table_bucketized ((yb_hash_code(c2, c3) % 3), c2 asc, c3 asc);
-create index table_bucketized_only_index_2 on table_bucketized ((yb_hash_code(c2, c4) % 3), c2 asc, c4 asc);
-create index table_bucketized_only_index_3 on table_bucketized ((yb_hash_code(c4, c5) % 7), c4 asc, c5 asc);
-create index table_bucketized_only_index_4 on table_bucketized ((yb_hash_code(c6, v) % 15), c6 asc, v asc);
+create index table_bucketized_only_index_1 on table_bucketized ((yb_hash_code(c2, c3) % 3) asc, c2 asc, c3 asc);
+create index table_bucketized_only_index_2 on table_bucketized ((yb_hash_code(c2, c4) % 3) asc, c2 asc, c4 asc);
+create index table_bucketized_only_index_3 on table_bucketized ((yb_hash_code(c4, c5) % 7) asc, c4 asc, c5 asc);
+create index table_bucketized_only_index_4 on table_bucketized ((yb_hash_code(c6, v) % 15) asc, c6 asc, v asc);
