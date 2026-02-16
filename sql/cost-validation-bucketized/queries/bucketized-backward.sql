@@ -13,13 +13,13 @@ FROM t100000 big
 JOIN t1000 small
   ON small.c1 = big.c1
  AND small.c2 = big.c2
-ORDER BY big.c1 DESC, big.c2 DESC;
+ORDER BY big.c1 DESC, big.c2 DESC LIMIT 50;
 
 
 SELECT c1, c2, c5
 FROM t100000w
 WHERE c1 BETWEEN 100 AND 50000
-ORDER BY c1 DESC, c2 DESC;
+ORDER BY c1 DESC, c2 DESC LIMIT 15;
 
 
 SELECT m.c1, m.c2, m.c3
@@ -30,7 +30,7 @@ WHERE EXISTS (
     WHERE t.c1 = m.c1
       AND t.c2 = m.c2
 )
-ORDER BY m.c1 DESC, m.c2 DESC;
+ORDER BY m.c1 DESC, m.c2 DESC LIMIT 10;
 
 
 SELECT DISTINCT ON (c1,c2) c1, c2, c3
@@ -94,7 +94,7 @@ select c1, c2,
        count(*) filter (where c3 <= 10) as cnt_lo
 from t100000
 group by c1, c2
-order by c1 desc, c2 desc;
+order by c1 desc, c2 desc limit 100;
 
 
 select m.c1, m.c2, m.c3
@@ -106,7 +106,7 @@ where exists (
       and t.c2 = m.c2
       and t.c3 = m.c3
 )
-order by m.c1 desc, m.c2 desc;
+order by m.c1 desc, m.c2 desc limit 100;
 
 
 with x as (
@@ -116,7 +116,7 @@ with x as (
 )
 select c1, c2, c3, dr
 from x
-order by c1 desc, c2 desc;
+order by c1 desc, c2 desc limit 10;
 
 
 select c1, c2, sum(c3) as s
@@ -199,14 +199,14 @@ order by m.c1 desc, m.c2 desc;
 select c1, c2, v
 from t100000w
   where v not like '%aaa%' and v='aaa'
-order by c1 desc, c2 desc;
+order by c1 desc, c2 desc limit 10;
 
 
 
 select c1, c2, v
 from t100000w
   where length(v) > 5
-order by c1 desc, c2 desc;
+order by c1 desc, c2 desc limit 500;
 
 
 select m.c1, m.c2, t.c3
@@ -251,3 +251,17 @@ join filtered f
   on m.c1 = f.c1
 where m.c1>m.c2
 order by m.c1 desc, m.c2 desc;
+
+select c1, c2
+from t100000w
+group by c1, c2
+order by c1 desc, c2 desc limit 10;
+
+
+select m.c1, m.c2, sum(w.c3) as s
+from t1000000m m
+join t100000w w
+  on m.c1 = w.c1
+where m.c1>m.c2 and w.c1>w.c2
+group by m.c1, m.c2
+order by m.c1 desc, m.c2 desc limit 10;

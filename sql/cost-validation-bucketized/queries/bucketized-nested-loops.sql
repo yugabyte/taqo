@@ -106,7 +106,7 @@ SELECT t1.c2, t1.v, t5.c3
 FROM t100 t1
 JOIN t100000w t5
   ON lower(t1.v) LIKE lower('%abc%')
-WHERE t5.c2 < 50000;
+WHERE t5.c2 < 50000 limit 1000;
 
 
 select m.c1,
@@ -131,7 +131,7 @@ where
   and (m.c1 + m.c2) % 3 in (0,1,2)
   and greatest(m.c1, m.c2) >= 0
 order by m.c1, m.c2
-limit 2000;
+limit 1000;
 
 
 
@@ -147,7 +147,7 @@ where
   and abs(m.c2 - w.c2) = 0
   and (m.c2 + coalesce(m.c6,0)) >= m.c2
 group by m.c2
-order by m.c2;
+order by m.c2 limit 1000;
 
 
 select m.c1, m.c2, m.c3
@@ -159,7 +159,7 @@ where exists (
       and w.c2 = m.c2
       and w.c1>w.c2
 )
-order by m.c1, m.c2;
+order by m.c1, m.c2 limit 100;
 
 select m.c1,
        m.c2,
@@ -738,4 +738,3 @@ SELECT *
 FROM z
 WHERE r < 5
 ORDER BY c1, c2;
-

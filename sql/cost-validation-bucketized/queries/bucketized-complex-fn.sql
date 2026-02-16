@@ -7,7 +7,7 @@ SELECT
     sum(c5) OVER (ORDER BY c2 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_sum
 FROM t100
 WHERE c2 BETWEEN 10 AND 90
-  AND c3 IS NOT NULL;
+  AND c3 IS NOT NULL limit 1000;
 
 SELECT
     c2,
@@ -17,20 +17,20 @@ SELECT
     max(c6) OVER (PARTITION BY c2) AS max_c6,
     sum(c5) OVER (ORDER BY c2 ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS running_sum
 FROM t100
-WHERE c2 > 20 order by c2,c3;
+WHERE c2 > 20 order by c2,c3 limit 200;
 
 SELECT c2,
     c3,
     dense_rank() OVER (PARTITION BY c2 ORDER BY c2,c3) AS dr,
     avg(c4) OVER (PARTITION BY c2) AS avg_c4
-FROM t100 order by c2,c3;
+FROM t100 order by c2,c3 limit 1000;
 
 SELECT
     c2,
     c4,
     row_number() OVER (PARTITION BY c2 ORDER BY c3) AS rn,
     dense_rank() OVER (PARTITION BY c2 ORDER BY coalesce(c4,0)) AS dr
-FROM t1000 order by c2,c4;
+FROM t1000 order by c2,c4 limit 200;
 
 SELECT
     c2,
@@ -72,7 +72,7 @@ SELECT
     row_number() OVER (PARTITION BY c2 ORDER BY c3) AS rn,
     dense_rank() OVER (PARTITION BY c3 ORDER BY coalesce(c2,0)) AS dr
 FROM t1000
-WHERE c2 BETWEEN 100 AND 900;
+WHERE c2 BETWEEN 100 AND 900 limit 100;
 
 
 SELECT
@@ -80,7 +80,7 @@ SELECT
     c3,
     rank() OVER (PARTITION BY c2 ORDER BY c3) AS rnk,
     count(*) OVER (PARTITION BY c2) AS cnt
-FROM t10000 order by c2,c3;
+FROM t10000 order by c2,c3 limit 600;
 
 
 SELECT
@@ -119,7 +119,7 @@ SELECT
     c3,
     row_number() OVER (PARTITION BY c2 ORDER BY length(v)) AS rn,
     dense_rank() OVER (PARTITION BY c2 ORDER BY c3) AS dr
-FROM t100000 order by c2,c3;
+FROM t100000 order by c2,c3 limit 1000;
 
 
 SELECT
