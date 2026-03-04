@@ -505,3 +505,44 @@ SELECT *
 FROM z
 WHERE r < 5
 ORDER BY c1, c2;
+
+
+with buckets(mod) as (select generate_series(0,2))
+select r.* from buckets,lateral (
+  select * from t10000
+  where c2=c4
+  order by c2,c4
+) r limit 10;
+
+
+with buckets(mod) as (select generate_series(0,2))
+  select r.*
+  from buckets,
+  lateral (
+    select c1, c2, c3, c4, c5, c6, bucketid
+    from t100000w
+    where bucketid in (0,1,2)
+      and c3>10
+    order by bucketid, c2, c3
+    limit 29
+  ) r
+  order by bucketid, c2, c3
+  limit 29;
+
+
+with seeds as (
+    select c1, c2
+    from t100
+    where bucketid in (0,1,2)
+    order by c1, c2
+  )
+  select s.c1, s.c2, x.avg_c4, x.max_c5
+  from seeds s,
+  lateral (
+    select avg(c4) as avg_c4,
+           max(c5) as max_c5
+    from t100000
+    where c1 = s.c1
+      and c2 = s.c2
+  ) x
+  order by s.c1, s.c2;
