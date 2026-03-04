@@ -30,7 +30,7 @@ CREATE INDEX t100_complex_index_5 ON t100 ((yb_hash_code(c2, lower(v::text)) % 3
 --------------------------------------------- TABLE - II ---------------------------------------------
 -- for each table lets try to have different bucketids (and for one table, just bucketid and simpler indexes - to check performance in normal conditions)
 -- simple table case below
-create table t1000 (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(1024),  bucketid int generated always as ( yb_hash_code(c2, c4) % 3 ) STORED, primary key (bucketid asc, c2, c4));
+create table t1000 (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(1024),  bucketid int generated always as ( yb_hash_code(c2, c4) % 5 ) STORED, primary key (bucketid asc, c2, c4));
 create index t1000_bucketized_1 on t1000 ((yb_hash_code(c2, c3) % 3), c2, c3);
 create index t1000_bucketized_2 on t1000 ((yb_hash_code(c2, c4) % 5), c2, c4);
 
@@ -67,7 +67,7 @@ create index t10000_bucketized_partition_def on t10000_partition_def ((yb_hash_c
 
 --------------------------------------------- TABLE - IV ---------------------------------------------
 -- simple case (similar to one used in other models)
-create table t100000 (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(1024), bucketid int generated always as ( yb_hash_code(c1, c2) % 3 ) STORED, primary key (bucketid asc, c1, c2));
+create table t100000 (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(1024), bucketid int generated always as ( yb_hash_code(c1, c2) % 7 ) STORED, primary key (bucketid asc, c1, c2));
 create unique index t100000_simple_index_1 on t100000 (c2 asc);
 create index t100000_simple_index_2 on t100000 (c3 asc);
 create index t100000_simple_index_3 on t100000 (c4 asc);
@@ -83,7 +83,7 @@ create index t100000_bucketized_3 on t100000 ((yb_hash_code(c1, c2) % 7), c1, c2
 
 
 --------------------------------------------- TABLE - V ---------------------------------------------
-create table t100000w (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(8192), bucketid int generated always as ( yb_hash_code(c1, c2) % 3 ) STORED, primary key (bucketid asc, c1, c2));
+create table t100000w (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(8192), bucketid int generated always as ( yb_hash_code(c1, c2) % 11 ) STORED, primary key (bucketid asc, c1, c2));
 create unique index t100000w_simple_index_1 on t100000w (c2 asc);
 create index t100000w_simple_index_2 on t100000w (c3 asc);
 create index t100000w_simple_index_3 on t100000w (c4 asc);
