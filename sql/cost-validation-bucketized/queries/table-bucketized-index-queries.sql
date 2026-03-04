@@ -1,20 +1,20 @@
-SELECT c1, c2 FROM table_bucketized WHERE bucketid IN (0,1,2) ORDER BY c1, c2;
+SELECT c1, c2 FROM table_bucketized WHERE bucketid IN (0,1,2) ORDER BY c1, c2 limit 10;
 SELECT c1, c2 FROM table_bucketized WHERE c1 + c2 < 100 AND c1 > c2 ORDER BY c1, c2;
 SELECT c2, c3 FROM table_bucketized WHERE c2 >= 0 AND c3 >= 1 AND (c2 + c3 * 3) % 7 < 5 ORDER BY c2, c3;
-SELECT c2, c4 FROM table_bucketized WHERE c2 = 10 ORDER BY c2, c4;
+SELECT c2, c4 FROM table_bucketized WHERE c2 = 10 ORDER BY c2, c4 limit 2;
 SELECT c1, c2 FROM table_bucketized WHERE bucketid IN (0,1,2) AND c1 BETWEEN 10 AND 20 ORDER BY c1, c2;
 SELECT c2, c4 FROM table_bucketized WHERE c2 * 3 + c4 < 10000 AND MOD(c2 + c4, 13) <= 8 ORDER BY c2, c4;
-SELECT c1, v FROM table_bucketized WHERE c1 > length(v) ORDER BY c1, v;
-SELECT c1, v FROM table_bucketized WHERE length(v) BETWEEN 10 AND 20 ORDER BY c1, v;
+SELECT c1, v FROM table_bucketized WHERE c1 > length(v) ORDER BY c1, v limit 10;
+SELECT c1, v FROM table_bucketized WHERE length(v) BETWEEN 10 AND 20 ORDER BY c1, v limit 10;
 SELECT c2, v FROM table_bucketized WHERE v LIKE 'aa%' AND c2 % 17 < 12 AND LENGTH(v) > 3 ORDER BY c2, v;
 SELECT c4, c5 FROM table_bucketized WHERE c4 BETWEEN 1 AND 500 AND c4 % 11 + c5 % 7 < 15 ORDER BY c4, c5;
 
 
-SELECT c1, c2, c3, c4 FROM table_bucketized ORDER BY c1 DESC, c2 DESC;
-SELECT c2, c3 FROM table_bucketized WHERE c2 BETWEEN 100 AND 50000 ORDER BY c2 DESC, c3 DESC;
+SELECT c1, c2, c3, c4 FROM table_bucketized ORDER BY c1 DESC, c2 DESC limit 100;
+SELECT c2, c3 FROM table_bucketized WHERE c2 BETWEEN 100 AND 50000 ORDER BY c2 DESC, c3 DESC limit 50;
 SELECT DISTINCT ON (c1, c2) c1, c2, c3 FROM table_bucketized ORDER BY c1 DESC, c2 DESC, c3 DESC;
 SELECT c1, c2, c3 FROM table_bucketized WHERE c1 NOT IN (1,2,3,4,5) ORDER BY c1 DESC, c2 DESC;
-SELECT c1, c2, c3 FROM table_bucketized WHERE c1 = 3 ORDER BY c1 DESC, c2 DESC;
+SELECT c1, c2, c3 FROM table_bucketized WHERE c1 = 3 ORDER BY c1 DESC, c2 DESC limit 5;
 SELECT c1, c2, c3 FROM table_bucketized WHERE (c3 + c2 - c1) > 0 ORDER BY c1 DESC, c2 DESC;
 SELECT c1, c2, v FROM table_bucketized WHERE v NOT LIKE '%aaa%' AND v = 'aaa' ORDER BY c1 DESC, c2 DESC;
 SELECT c1, c2, v FROM table_bucketized WHERE c1=2 ORDER BY c1 DESC, c2 DESC;
@@ -22,14 +22,14 @@ SELECT c1, c2, c3 FROM table_bucketized WHERE c1 BETWEEN 100 AND 50000 and c2=10
 SELECT c2, c3, c4 FROM table_bucketized WHERE c2 > c3 ORDER BY c2 DESC, c3 DESC;
 
 
-SELECT * FROM table_bucketized WHERE c5 <= 100000 AND (c4 = 4 OR c3 = 4);
-SELECT * FROM table_bucketized WHERE c5 <= 100000 AND (c4 <= 10 OR c3 <= 10);
+SELECT * FROM table_bucketized WHERE c5 <= 100000 AND (c4 = 4 OR c3 = 4) limit 100;
+SELECT * FROM table_bucketized WHERE c5 <= 100000 AND (c4 <= 10 OR c3 <= 10) limit 100;
 SELECT * FROM table_bucketized WHERE c2 <= 10 AND c6 <= 1 ORDER BY c2 LIMIT 1024;
 SELECT c3, c4, c5 FROM table_bucketized WHERE c5 <= 100 AND (c4 = 4 OR c3 = 4) ORDER BY c5, c4, c3 LIMIT 1024;
 SELECT * FROM table_bucketized WHERE c1 <= 100 OR c2 <= 100 ORDER BY c1 LIMIT 1024;
 
 
-SELECT c2, c3, row_number() OVER (PARTITION BY c2 ORDER BY c3 NULLS LAST) AS rn, avg(c4) OVER (PARTITION BY c2) AS avg_c4 FROM table_bucketized WHERE c2 BETWEEN 10 AND 90 AND c3 IS NOT NULL;
+SELECT c2, c3, row_number() OVER (PARTITION BY c2 ORDER BY c3 NULLS LAST) AS rn, avg(c4) OVER (PARTITION BY c2) AS avg_c4 FROM table_bucketized WHERE c2 BETWEEN 10 AND 90 AND c3 IS NOT NULL limit 10;
 SELECT c2, c3, dense_rank() OVER (PARTITION BY c2 ORDER BY c2, c3) AS dr, avg(c4) OVER (PARTITION BY c2) AS avg_c4 FROM table_bucketized ORDER BY c2, c3;
 SELECT c2, c4, row_number() OVER (PARTITION BY c2 ORDER BY c3) AS rn, dense_rank() OVER (PARTITION BY c2 ORDER BY coalesce(c4,0)) AS dr FROM table_bucketized ORDER BY c2, c4;
 SELECT c2, c3, row_number() OVER (PARTITION BY c2 ORDER BY c3) AS rn, count(*) OVER (PARTITION BY c3) AS freq FROM table_bucketized WHERE c2 BETWEEN 100 AND 900;
@@ -41,12 +41,12 @@ SELECT c2, c5, sum(c6) OVER (ORDER BY c5 ROWS BETWEEN UNBOUNDED PRECEDING AND CU
 SELECT c1, c2, row_number() OVER (ORDER BY c1, c2) AS rn FROM table_bucketized WHERE bucketid IN (0,1,2) ORDER BY c1, c2;
 
 
-SELECT t1.c1, t1.c2, t2.c4 FROM table_bucketized t1 JOIN table_bucketized t2 ON t1.c2 = t2.c2 WHERE t1.c2 BETWEEN 5 AND 500;
-SELECT m.c1, m.c2, t.c3 FROM table_bucketized m JOIN table_bucketized t ON m.c1 = t.c1 WHERE m.c2 > m.c1;
+SELECT t1.c1, t1.c2, t2.c4 FROM table_bucketized t1 JOIN table_bucketized t2 ON t1.c2 = t2.c2 WHERE t1.c2 BETWEEN 5 AND 500 limit 100;
+SELECT m.c1, m.c2, t.c3 FROM table_bucketized m JOIN table_bucketized t ON m.c1 = t.c1 WHERE m.c2 > m.c1 limit 10;
 SELECT t1.c1, t1.c2, t1.c4, t2.c3 FROM table_bucketized t1 JOIN table_bucketized t2 ON t1.c2 = t2.c2 WHERE t1.c4 BETWEEN 20 AND 80 order by t1.c1, t1.c4;
-SELECT big.c1, big.c2, small.c3 FROM table_bucketized big JOIN table_bucketized small ON small.c1 = big.c1 AND small.c2 = big.c2 WHERE big.c1 > big.c2 ORDER BY big.c1, big.c2;
+SELECT big.c1, big.c2, small.c3 FROM table_bucketized big JOIN table_bucketized small ON small.c1 = big.c1 AND small.c2 = big.c2 WHERE big.c1 > big.c2 ORDER BY big.c1, big.c2 limit 10;
 SELECT m.c1, m.c2, m.c3, t.c4 FROM table_bucketized t JOIN table_bucketized m ON m.c1 = t.c1 AND m.c3 = t.c3 WHERE greatest(m.c1, m.c3) = m.c1 and m.c2=10 ORDER BY m.c1, m.c3;
 SELECT m.c1, m.c2, w.v FROM table_bucketized w JOIN table_bucketized m ON m.c1 = w.c1 AND m.c2 = w.c2 WHERE sign(w.c1 - w.c2) = 1 and m.c2=10 ORDER BY w.c1, w.c2;
 SELECT m.c1, m.c2, w.v, t.c3 FROM table_bucketized m JOIN table_bucketized w ON w.c1 = m.c1 AND abs(w.c2 - m.c2) = 0 and m.c1=100 JOIN table_bucketized t ON t.c2 = m.c2 WHERE sign(m.c1 - m.c2) >= 0 ORDER BY m.c1, m.c2;
-SELECT m.c1, m.c2, w.v FROM table_bucketized m JOIN table_bucketized w ON w.c1 = m.c1 AND abs(w.c2 - m.c2) = 0 WHERE (m.c3 IN (5, 10, 15) OR m.c4 BETWEEN 100 AND 200) AND m.c1 >= m.c2 ORDER BY m.c1, m.c2;
+SELECT m.c1, m.c2, w.v FROM table_bucketized m JOIN table_bucketized w ON w.c1 = m.c1 AND abs(w.c2 - m.c2) = 0 WHERE (m.c3 IN (5, 10, 15) OR m.c4 BETWEEN 100 AND 200) AND m.c1 >= m.c2 ORDER BY m.c1, m.c2 limit 10;
 SELECT a.c1, a.c2, b.c3 FROM table_bucketized a JOIN table_bucketized b ON a.c1 = b.c1 AND a.c2 = b.c2 WHERE a.c1 > a.c2 AND b.c1 < b.c2 + 10 and b.c1=20 and a.c1=10 ORDER BY a.c1, a.c2;
