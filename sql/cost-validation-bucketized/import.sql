@@ -148,7 +148,7 @@ insert into table_bucketized
           row_number() over (order by random() + 2) i4,
           row_number() over (order by random() + 3) i5,
           row_number() over (order by random() + 4) i6
-        from generate_series(1, 1000) i
+        from generate_series(1, 1000000) i
     ) v order by 1;
 
 
@@ -168,6 +168,6 @@ insert into table_simple
           row_number() over (order by random() + 2) i4,
           row_number() over (order by random() + 3) i5,
           row_number() over (order by random() + 4) i6
-        from generate_series(1, 1000) i
+        from generate_series(1, 1000000) i
     ) v order by 1;
 
