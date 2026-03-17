@@ -90,7 +90,7 @@ create table lineitem
     l_shipinstruct  char(25),
     l_shipmode      char(10),
     l_comment       varchar(44),
-    primary key (l_orderkey ASC, l_suppkey ASC, l_partkey ASC, l_linenumber ASC)
+    primary key (l_orderkey ASC, l_linenumber ASC)
 );
 
 create index idx_supplier_nation_key on supplier (s_nationkey ASC);
