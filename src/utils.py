@@ -2,6 +2,7 @@ import difflib
 import hashlib
 import json
 import re
+import statistics
 import time
 import traceback
 import pglast
@@ -71,6 +72,38 @@ def get_result(cur, is_dml: bool):
             str_result.append(f"{str(column_value)}")
 
     return cardinality, ''.join(str_result)
+
+
+def _filter_outliers(execution_times, threshold_pct=100, min_median_ms=500):
+    """Filter outliers by percentage deviation from median.
+    Returns (clean_times, outlier_times).
+
+    A value is an outlier if it deviates more than threshold_pct%
+    from the median. Default 100% means flag anything >2x or <0.5x median.
+    Skips filtering entirely when median is below min_median_ms — at that
+    scale variations are just network/OS noise.
+    """
+    if len(execution_times) < 4:
+        return list(execution_times), []
+
+    med = statistics.median(execution_times)
+    if med == 0 or med < min_median_ms:
+        return list(execution_times), []
+
+    clean = []
+    outliers = []
+    for t in execution_times:
+        deviation_pct = abs(t - med) / med * 100
+        if deviation_pct > threshold_pct:
+            outliers.append(t)
+        else:
+            clean.append(t)
+
+    # safety: don't filter if it would remove too many values
+    if len(clean) < 2:
+        return list(execution_times), []
+
+    return clean, outliers
 
 
 def calculate_avg_execution_time(cur,
@@ -169,7 +202,74 @@ def calculate_avg_execution_time(cur,
             if iteration >= num_warmup:
                 actual_evaluations += 1
 
-    # TODO convert execution_time_ms into a property
+    # Outlier detection: remove noisy results and run replacement iterations
+    all_execution_times = list(execution_times)
+    max_additional_runs = 5
+    additional_runs = 0
+
+    while additional_runs < max_additional_runs:
+        clean_times, outliers = _filter_outliers(execution_times)
+        if not outliers:
+            break
+
+        config.logger.info(
+            f"Detected {len(outliers)} outlier(s) {outliers} in execution times "
+            f"{execution_times}, running additional iteration(s)")
+
+        execution_times = clean_times
+        runs_needed = min(len(outliers), max_additional_runs - additional_runs)
+
+        rerun_failed = False
+        for _ in range(runs_needed):
+            additional_runs += 1
+            try:
+                sut_database.prepare_query_execution(cur, query)
+
+                start_time = current_milli_time()
+                evaluate_sql(cur, query_str)
+                _, result = get_result(cur, is_dml)
+
+                if with_analyze:
+                    new_time = extract_execution_time_from_analyze(result)
+                else:
+                    new_time = current_milli_time() - start_time
+
+                execution_times.append(new_time)
+                all_execution_times.append(new_time)
+            except (psycopg2.errors.QueryCanceled, psycopg2.errors.DatabaseError):
+                config.logger.debug(
+                    f"Outlier rerun failed, stopping additional runs:\n{query_str}")
+                rerun_failed = True
+                break
+            finally:
+                rolled_back_tries = 0
+                rolled_back = False
+                while rolled_back_tries < 5:
+                    rolled_back_tries += 1
+                    try:
+                        connection.rollback()
+                        rolled_back = True
+                        break
+                    except Exception as e:
+                        time.sleep(2)
+                if not rolled_back:
+                    config.logger.error(
+                        f"INTERNAL ERROR Failed to rollback transaction "
+                        f"after failed query execution:\n{query_str}")
+        if rerun_failed:
+            break
+
+    # Final cleanup — filter any outliers remaining from the last batch
+    final_clean, _ = _filter_outliers(execution_times)
+    if len(final_clean) >= 2:
+        execution_times = final_clean
+
+    if additional_runs > 0:
+        config.logger.info(
+            f"Outlier detection: {additional_runs} additional run(s), "
+            f"final times {execution_times} (all raw times {all_execution_times})")
+
+    query.execution_times = all_execution_times
     query.execution_time_ms = sum(execution_times) / len(execution_times)
 
     if config.yugabyte_collect_stats:
