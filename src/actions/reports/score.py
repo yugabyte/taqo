@@ -576,11 +576,12 @@ class ScoreReport(AbstractReportAction):
         :param query:
         :return:
         """
-        # TODO FIX THIS!!!!!
         if not (execution_plan_heatmap := query.heatmap()):
             return
 
         best_decision = max(row['weight'] for row in execution_plan_heatmap.values())
+        if best_decision == 0:
+            return
         last_rowid = max(execution_plan_heatmap.keys())
         result = ""
         for row_id, row in execution_plan_heatmap.items():
@@ -817,8 +818,7 @@ class ScoreReport(AbstractReportAction):
             report.end_collapsible()
 
         if show_best:
-            pass
-            # self.__report_heatmap(report, yb_query)
+            self.__report_heatmap(report, yb_query)
 
         report.start_collapsible("YB default plan")
         report.start_source(["diff"])

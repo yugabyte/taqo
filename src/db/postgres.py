@@ -580,12 +580,6 @@ class PostgresExecutionPlan(ExecutionPlan):
 
         return current_path[0] if current_path else None
 
-    def __cmp__(self, other):
-        if isinstance(other, str):
-            return self.full_str == other
-
-        return self.full_str == other.full_str
-
     def __str__(self):
         return self.full_str
 
@@ -660,7 +654,6 @@ class PGListOfOptimizations(ListOfOptimizations):
     def __init__(self, config: Config, query: PostgresQuery):
         super().__init__(config, query)
 
-        # todo rework this
         self.leading = Leading(self.config, query.tables)
         self.leading.construct()
 

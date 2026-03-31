@@ -123,7 +123,12 @@ class TaqoReport(AbstractReportAction):
         :return:
         """
         execution_plan_heatmap = query.heatmap()
+        if not execution_plan_heatmap:
+            return
+
         best_decision = max(row['weight'] for row in execution_plan_heatmap.values())
+        if best_decision == 0:
+            return
         last_rowid = max(execution_plan_heatmap.keys())
         result = ""
         for row_id, row in execution_plan_heatmap.items():

@@ -91,7 +91,6 @@ def calculate_avg_execution_time(cur,
     is_dml = query_is_dml(query_str_lower)
 
     execution_times = []
-    actual_evaluations = 0
 
     # run at least one iteration
     num_retries = max(num_retries, 2)
@@ -166,10 +165,6 @@ def calculate_avg_execution_time(cur,
                 config.logger.error(
                     f"INTERNAL ERROR Failed to rollback transaction after failed query execution:\n{query_str}")
 
-            if iteration >= num_warmup:
-                actual_evaluations += 1
-
-    # TODO convert execution_time_ms into a property
     query.execution_time_ms = sum(execution_times) / len(execution_times)
 
     if config.yugabyte_collect_stats:

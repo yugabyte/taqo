@@ -202,8 +202,7 @@ class Yugabyte(Postgres):
                 latency=result[0][7],
             )
         except Exception:
-            # TODO do nothing
-            pass
+            self.logger.debug("Failed to collect query statistics", exc_info=True)
 
 
 class YugabyteQuery(PostgresQuery):

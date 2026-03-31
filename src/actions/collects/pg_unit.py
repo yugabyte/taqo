@@ -45,8 +45,8 @@ class PgUnitGenerator:
             with open(f"report/{self.config.output}_pgunit.out", "w") as result_file:
                 self.generate_output_file(create_queries, queries, result_file, teardown_queries, with_output=True)
         except Exception:
-            # TODO fix here - there will be no PG results
-            self.config.logger.exception("Failed to generate unit files")
+            self.config.logger.exception("Failed to generate PG unit test files - skipping unit test generation")
+            self.config.has_warnings = True
 
     def generate_output_file(self, create_queries, queries, result_file, teardown_queries, with_output=False):
         result_file.write(f"CREATE DATABASE {self.config.connection.database} with colocation = true;\n")

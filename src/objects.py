@@ -66,6 +66,16 @@ class Table:
 class ExecutionPlan:
     full_str: str = ""
 
+    def __eq__(self, other):
+        if isinstance(other, str):
+            return self.full_str == other
+        if isinstance(other, ExecutionPlan):
+            return self.full_str == other.full_str
+        return NotImplemented
+
+    def __hash__(self):
+        return hash(self.full_str)
+
     def get_estimated_cost(self):
         return -1
 
@@ -73,8 +83,7 @@ class ExecutionPlan:
         return self.full_str != "" and self.full_str is not None
 
     def get_clean_plan(self, execution_plan=None):
-        # todo get plan tree instead here to support plan comparison between DBs
-        pass
+        return (execution_plan.full_str if execution_plan else self.full_str) or ""
 
 
 @dataclasses.dataclass
@@ -208,8 +217,14 @@ class PlanNode:
         self.rows: float = 0.0
         self.nloops: float = 0.0
 
-    def __cmp__(self, other):
-        pass  # todo
+    def __eq__(self, other):
+        if not isinstance(other, PlanNode):
+            return NotImplemented
+        return (self.node_type == other.node_type
+                and self.name == other.name
+                and self.child_nodes == other.child_nodes)
+
+    __hash__ = None
 
     def __str__(self):
         return self.get_full_str(estimate=True, actual=True)

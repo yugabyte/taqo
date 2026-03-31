@@ -11,6 +11,18 @@ from utils import evaluate_sql, calculate_avg_execution_time, get_md5, allowed_d
     extract_execution_time_from_analyze, current_milli_time
 
 
+_NON_DETERMINISTIC_FUNCTIONS = (
+    "now()", "random()", "clock_timestamp()", "timeofday()",
+    "statement_timestamp()", "transaction_timestamp()",
+    "current_timestamp", "setseed(",
+)
+
+
+def _has_non_deterministic_functions(query: str) -> bool:
+    query_lower = query.lower()
+    return any(fn in query_lower for fn in _NON_DETERMINISTIC_FUNCTIONS)
+
+
 class CollectAction:
     def __init__(self):
         self.config = Config()
@@ -186,9 +198,8 @@ class CollectAction:
             if optimization.result_hash and result_hash != optimization.result_hash:
                 cardinality_equality = "=" if original_query.result_cardinality == optimization.result_cardinality else "!="
 
-                if "now()" in original_query.query.lower():
-                    # todo fixing result_hash for queries with function calls
-                    optimization.query_hash = result_hash
+                if _has_non_deterministic_functions(original_query.query):
+                    optimization.result_hash = result_hash
                     continue
 
                 self.config.has_failures = True
