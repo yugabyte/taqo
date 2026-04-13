@@ -87,6 +87,10 @@ class CollectAction:
             model_queries = teardown_queries + create_queries + analyze_queries + import_queries
             queries = model.get_queries(created_tables)
 
+            if self.config.dump_stats:
+                self.logger.info("Dumping statistics to model directory...")
+                model.dump_stats(connection)
+
             if DDLStep.COMPACT in self.config.ddls:
                 self.sut_database.run_compaction(tables=non_catalog_tables)
         except Exception as e:

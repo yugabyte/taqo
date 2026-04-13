@@ -39,6 +39,7 @@ class DDLStep(Enum):
     IMPORT = 3
     COMPACT = 4
     DROP = 5
+    STATS = 6
 
 
 @dataclasses.dataclass
@@ -113,6 +114,8 @@ class Config(metaclass=Singleton):
     yugabyte_bin_path: str = None
     yugabyte_collect_stats: bool = True
     yugabyte_master_addresses: str = None
+
+    dump_stats: bool = False
 
     asciidoctor_path: str = None
     clear: bool = False

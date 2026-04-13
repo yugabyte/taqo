@@ -182,7 +182,12 @@ if __name__ == "__main__":
                         help='Git revision or path to release build')
     parser.add_argument('--ddls',
                         default="database,create,analyze,import,compact,drop",
-                        help='Model creation queries, comma separated: database,create,analyze,import,compact,drop')
+                        help='Model creation queries, comma separated: database,create,analyze,import,compact,drop,stats. '
+                             'Use "stats" instead of "analyze" to load hardcoded statistics from statistics.json')
+    parser.add_argument('--dump-stats',
+                        action=argparse.BooleanOptionalAction,
+                        default=False,
+                        help='After ANALYZE, dump statistics to statistics.json in the model directory for future deterministic runs')
 
     parser.add_argument('--clean-db',
                         action=argparse.BooleanOptionalAction,
@@ -364,6 +369,7 @@ if __name__ == "__main__":
 
         asciidoctor_path=configuration.get("asciidoctor-path", "asciidoc"),
 
+        dump_stats=args.dump_stats,
         clear=args.clear)
 
     config.database = create_database(args.db, config)

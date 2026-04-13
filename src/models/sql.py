@@ -14,10 +14,14 @@ from config import DDLStep
 from objects import QueryTips, Field
 from db.postgres import PostgresQuery, Table
 from models.abstract import QTFModel
+from models.stats import dump_statistics, load_statistics
 from utils import get_alias_table_names, evaluate_sql, get_md5, get_model_path, find_order_by_in_query
 
 
 class SQLModel(QTFModel):
+
+    def _get_statistics_json_path(self):
+        return f"{get_model_path(self.config.model)}/statistics.json"
 
     def create_tables(self, conn, skip_analyze=False, db_prefix=None):
         _, _, teardown_queries = self.evaluate_ddl_queries(conn, DDLStep.DROP, DDLStep.DROP in self.config.ddls,
@@ -36,11 +40,23 @@ class SQLModel(QTFModel):
                                                          db_prefix)
         import_queries.insert(0, "-- IMPORT QUERIES")
 
+        # Always run analyze.sql — it contains both CREATE STATISTICS (DDL)
+        # and ANALYZE statements needed for extended statistics objects to exist.
         _, _, analyze_queries = self.evaluate_ddl_queries(conn,
                                                           DDLStep.ANALYZE,
                                                           DDLStep.ANALYZE in self.config.ddls,
                                                           db_prefix)
         analyze_queries.insert(0, "-- ANALYZE QUERIES")
+
+        # If STATS step enabled and statistics.json exists, overwrite the
+        # computed stats with hardcoded deterministic values.
+        stats_path = self._get_statistics_json_path()
+        if DDLStep.STATS in self.config.ddls and exists(stats_path):
+            self.logger.info(f"Overwriting statistics with hardcoded values from {stats_path}")
+            with conn.cursor() as cur:
+                load_statistics(cur, stats_path)
+            conn.commit()
+            analyze_queries.append("-- STATS OVERWRITTEN FROM statistics.json")
 
         if not created_tables:
             # try to load current tables
@@ -50,6 +66,13 @@ class SQLModel(QTFModel):
         self.load_table_stats(conn.cursor(), created_tables)
 
         return created_tables, non_catalog_tables, teardown_queries, create_queries, analyze_queries, import_queries
+
+    def dump_stats(self, conn):
+        """Dump current database statistics to statistics.json in the model directory."""
+        stats_path = self._get_statistics_json_path()
+        with conn.cursor() as cur:
+            dump_statistics(cur, stats_path)
+        self.logger.info(f"Statistics dumped to {stats_path}")
 
     def get_valid_file_path(self, file_name: str, ddl_prefix: str):
         complete_file_name = \
