@@ -546,3 +546,347 @@ with seeds as (
       and c2 = s.c2
   ) x
   order by s.c1, s.c2;
+
+
+WITH src AS (
+    SELECT c2, c3
+    FROM t10000
+    WHERE c2 > c3
+)
+SELECT src.c2, src.c3, z.c4, z.rnk
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT m.c2, m.c3, m.c4,
+               rank() OVER (ORDER BY m.c4 DESC) rnk,
+               row_number() OVER (PARTITION BY m.c2 ORDER BY m.c4 DESC) rn
+        FROM t100000w m
+        WHERE abs(m.c4 - src.c3) % 7 IN (1,4,6)
+    ) sub
+    WHERE sub.rn <= 50
+) z
+WHERE z.rnk <= 10
+ORDER BY src.c2, src.c3;
+
+with src as (
+    select c2, c3
+    from t10000
+    where c2 > c3
+)
+select src.c2, src.c3, z.c4, z.rnk
+from src,
+lateral (
+    select c2, c3, c4,
+           rank() over (order by coalesce(c4, 0) desc) as rnk
+    from t100000w
+    where c2 = src.c2
+      and c3 = src.c3
+      and abs(c4 - coalesce(c3, 0)) % 7 in (1, 4, 6)
+      and greatest(c4, coalesce(c2, 0), 10) < 100
+      and least(c4, coalesce(c2, 0), 1000) > 0
+      and substr(c2::text || c3::text, 1, 2) = '10'
+) z
+where z.rnk <= 5
+order by src.c2, src.c3;
+
+
+with src as (
+    select c1, c2, c3
+    from t1000000m
+)
+select src.c1, src.c2, z.c5, z.rnk
+from src,
+lateral (
+    select m.c5, m.c6,
+           rank() over (
+               order by coalesce(m.c6, 0) desc,
+                        coalesce(m.c5, 0),
+                        m.c1
+           ) as rnk
+    from t1000000m m
+    where m.c3 = src.c3
+) z
+where z.rnk <= 80
+order by src.c1, src.c2;
+
+with src as (
+    select c1, c2, c3
+    from t1000000m
+)
+select src.c1, src.c3, z.c6, z.rn1, z.rn2
+from src,
+lateral (
+    select c6,
+           row_number() over (order by coalesce(c6, 0) desc, c5) as rn1,
+           dense_rank() over (order by c4, c5) as rn2
+    from t1000000m m
+    where m.c3 = src.c3
+) z
+where z.rn1 <= 120
+  and z.rn2 <= 40
+order by src.c1, src.c3;
+
+
+with src as (
+    select c2, c3
+    from t10000
+    where c2 > c3
+    order by c2, c3
+    limit 6000
+)
+select src.c2, src.c3, z.c4, z.rnk
+from src,
+lateral (
+    select c2, c3, c4,
+           rank() over (order by coalesce(c4, 0) desc) as rnk
+    from t100000w
+    where c2 = src.c2
+      and c3 = src.c3
+) z
+where z.rnk <= 10
+order by src.c2, src.c3;
+
+
+with src as (
+    select c1, c3
+    from t1000000m
+)
+select src.c1, z1.mx as mx_c6, z2.mn as mn_c5
+from src,
+lateral (
+    select max(coalesce(m.c6, 0)) as mx
+    from t1000000m m
+    where m.c3 = src.c3
+) z1,
+lateral (
+    select min(coalesce(m.c5, 0)) as mn
+    from t1000000m m
+    where m.c3 = src.c3
+) z2
+order by src.c1;
+
+
+with seeds as (
+    select c1, c2
+    from t10000
+    where c2 > c3
+    order by c1, c2
+    limit 8000
+)
+select s.c1, s.c2, x.c4, x.run_sum
+from seeds s,
+lateral (
+    select b.c4,
+           sum(coalesce(b.c6, 0)) over (
+               order by b.c5
+               rows between unbounded preceding and current row
+           ) as run_sum
+    from table_bucketized b
+    where b.c1 = s.c1
+      and b.c2 = s.c2
+) x
+order by s.c1, s.c2;
+
+select a.c1,
+       a.c2,
+       b.c3 as b_c3,
+       c.c4 as c_c4,
+       dense_rank() over (order by a.c1, a.c2, coalesce(b.c6, 0) + coalesce(c.c6, 0)) as dr
+from t100000 a
+join t100000 b
+  on a.c1 = b.c1
+ and a.c2 = b.c2
+join t100000 c
+  on c.c1 = a.c1
+ and c.c2 = (a.c2 + sign(a.c2 - b.c2))
+where a.c1 > a.c2
+  and nullif(b.c3, c.c3) is not null
+  and abs(coalesce(a.c4, 0) - coalesce(b.c4, 0) - coalesce(c.c4, 0)) % 5 in (0, 2, 4)
+  and greatest(a.c5, b.c5, least(c.c5, 999999)) between 1 and 999999
+order by a.c1, a.c2;
+
+
+select m.c1,
+       m.c2,
+       t.c3,
+       b.c5,
+       sum(coalesce(m.c6, 0) * sign(t.c1 - t.c2 + 1)) over (
+           partition by m.c3, t.bucketid
+           order by m.c1, m.c2
+           rows between 2 preceding and 2 following
+       ) as wsum
+from t1000000m m
+join t100000 t
+  on t.c1 = m.c1
+ and t.c2 = m.c2 - 10000
+join table_bucketized b
+  on b.c1 = m.c1
+ and b.c2 = m.c2
+where m.c2 > m.c1
+  and coalesce(t.c4, 0) + coalesce(b.c4, 0) < 200000
+  and substr(b.v, 1, 3) = substr(t.v, 1, 3)
+  and (m.c5 + b.c5 + abs(coalesce(t.c3, 0))) % 13 in (1, 5, 9)
+order by m.c1, m.c2
+limit 1500;
+
+
+select t1.c2,
+       t2.c3,
+       m.c6,
+       ntile(4) over (order by greatest(t1.c1, t2.c1, m.c1)) as q
+from t100 t1
+join t10000 t2
+  on t2.c2 = t1.c2 + (t1.c1 % 7) * sign(t1.c1)
+join t1000000m m
+  on m.c1 = t2.c1
+ and m.c2 = t2.c2 + 10000
+where least(t1.c3, t2.c3, coalesce(m.c3, 0)) >= 0
+  and greatest(coalesce(t1.c6, 0), t2.c6, m.c6) is not null
+  and (t1.c4 * t2.c4 + coalesce(m.c4, 0)) % 17 <> 15
+order by t1.c2, m.c1
+limit 3000;
+
+
+select count(*) as cnt
+from (
+    select v.c1, v.c2, v.c3, g.n
+    from t10000 v
+    cross join generate_series(1, 10000) g(n)
+    where v.c2 > v.c3
+    order by v.c1, v.c2, g.n
+    limit 5000
+) d,
+lateral (
+    select rank() over (
+               order by coalesce(w.c4, 0) desc,
+                        length(substr(w.v, 1, least(600, greatest(100, (d.n * 37 + w.c1) % 500)))),
+                        w.c5
+           ) as rk
+    from t100000w w
+    where w.c1 = d.c1
+      and w.c2 = d.c2
+      and greatest(coalesce(w.c3, 0), d.c3, 0) < 100000
+      and least(coalesce(w.c4, 999), coalesce(w.c5, 0), 999999) > -999999
+      and abs(coalesce(w.c4, 0) - d.c3 - d.n) % 5 in (0, 1, 2, 3, 4)
+) z
+where z.rk <= 120;
+
+
+select (select count(*) from generate_series(1, 9000) g(i),
+        lateral (
+            select rank() over (order by m.c6 desc, m.c5, m.c4) rk
+            from t1000000m m
+            where m.c3 = ((abs(g.i) % 10) + 1) * 10
+        ) l
+        where l.rk <= 300
+       )
+     + (select count(*) from generate_series(1, 9000) g(i),
+        lateral (
+            select dense_rank() over (partition by m.c4 order by m.c6, m.c5) dr
+            from t1000000m m
+            where m.c3 = ((abs(g.i + 3) % 10) + 1) * 10
+        ) l2
+        where l2.dr <= 300
+       ) as pair_cnt;
+
+SELECT COUNT(*)
+FROM generate_series(1, 7000) g(i),
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT m.*,
+               row_number() OVER (PARTITION BY m.c4 ORDER BY m.c6 DESC) rn,
+               dense_rank() OVER (ORDER BY m.c5) dr
+        FROM t1000000m m
+        WHERE m.c3 = ((g.i % 10) + 1) * 10
+    ) sub
+    WHERE rn <= 20 AND dr <= 100
+) x;
+
+
+WITH src AS (
+    SELECT c2, c3
+    FROM t10000
+    WHERE c2 > c3
+)
+SELECT src.c2, src.c3, z.c4, z.rnk
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT m.c2, m.c3, m.c4,
+               rank() OVER (ORDER BY m.c4 DESC) rnk,
+               dense_rank() OVER (PARTITION BY m.c3 ORDER BY m.c4) dr,
+               sum(m.c4) OVER (PARTITION BY m.c2) s
+        FROM t100000w m
+        WHERE abs(m.c4 - src.c3) % 7 IN (1,4,6)
+          AND (m.c2 + m.c3 + m.c4) % 5 <> 0
+          AND random() < 0.95
+    ) sub1,
+    LATERAL (
+        SELECT avg(m2.c4) avg_val
+        FROM t100000w m2
+        WHERE m2.c2 = sub1.c2
+    ) sub2
+    WHERE sub1.dr <= 100
+) z
+WHERE z.rnk <= 20
+ORDER BY src.c2, src.c3;
+
+
+WITH src AS (
+    SELECT c2, c3
+    FROM t10000
+    WHERE c2 > c3
+    ORDER BY c2, c3
+    LIMIT 6000
+)
+SELECT src.c2, src.c3, z.c4, z.rnk
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT m.c2, m.c3, m.c4,
+               rank() OVER (ORDER BY m.c4 DESC) rnk,
+               dense_rank() OVER (PARTITION BY m.c3 ORDER BY m.c4) dr
+        FROM t100000w m
+        WHERE m.c2 = src.c2
+          AND random() < 0.98
+    ) sub1,
+    LATERAL (
+        SELECT avg(m2.c4) avg_val
+        FROM t100000w m2
+        WHERE m2.c3 = sub1.c3
+    ) sub2
+    WHERE sub1.dr <= 200
+) z
+WHERE z.rnk <= 20
+ORDER BY src.c2, src.c3;
+
+
+WITH src AS (
+    SELECT c2, c3
+    FROM t10000
+    WHERE c2 > c3
+    ORDER BY c2, c3
+    LIMIT 6000
+)
+SELECT src.c2, src.c3, z.c4, z.rnk
+FROM src,
+generate_series(1, 5),
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT c2, c3, c4,
+               rank() OVER (ORDER BY random()) rnk,  -- worst-case sort
+               row_number() OVER (PARTITION BY c2 ORDER BY random()) rn
+        FROM t100000w
+        WHERE (c2 + 0) = src.c2
+          AND (c3 + 0) = src.c3
+          AND random() < 0.99
+    ) t
+    WHERE rn <= 200
+) z
+WHERE z.rnk <= 50
+ORDER BY src.c2, src.c3;
