@@ -92,3 +92,15 @@ INSERT INTO t_char8_100k SELECT left(md5((s)::text), 8), left(md5((s/2)::text), 
 
 CREATE TABLE t_char16_100k (v1 char(16), v2 char(16), v3 char(16), v4 char(16), v5 char(16), v6 char(16), v7 char(16), v8 char(16));
 INSERT INTO t_char16_100k SELECT left(md5((s)::text), 16), left(md5((s/2)::text), 16), left(md5((s/4)::text), 16), left(md5((s/8)::text), 16), left(md5((s/8)::text), 16), left(md5((s/4)::text), 16), left(md5((s/2)::text), 16), left(md5((s)::text), 16) FROM generate_series(1, 100000) s;
+
+CREATE TABLE t_buckets_4 (k1 INT, v1 INT, bucket_id INT GENERATED ALWAYS AS (yb_hash_code(k1) % 4) STORED, PRIMARY KEY (bucket_id ASC, k1 ASC));
+INSERT INTO t_buckets_4 (SELECT s, s FROM generate_series(1, 10000000));
+
+CREATE TABLE t_buckets_8 (k1 INT, v1 INT, bucket_id INT GENERATED ALWAYS AS (yb_hash_code(k1) % 8) STORED, PRIMARY KEY (bucket_id ASC, k1 ASC));
+INSERT INTO t_buckets_8 (SELECT s, s FROM generate_series(1, 10000000));
+
+CREATE TABLE t_buckets_16 (k1 INT, v1 INT, bucket_id INT GENERATED ALWAYS AS (yb_hash_code(k1) % 16) STORED, PRIMARY KEY (bucket_id ASC, k1 ASC));
+INSERT INTO t_buckets_16 (SELECT s, s FROM generate_series(1, 10000000));
+
+CREATE TABLE t_buckets_32_idx (k1 INT, v1 INT, bucket_id INT GENERATED ALWAYS AS (yb_hash_code(k1) % 32) STORED, PRIMARY KEY (bucket_id ASC, k1 ASC));
+INSERT INTO t_buckets_32_idx (SELECT s, s FROM generate_series(1, 10000000));
