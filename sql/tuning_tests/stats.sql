@@ -15,4 +15,8 @@ SELECT (SELECT COUNT(*) FROM t_range_100k),
        (SELECT COUNT(*) FROM t_range_100k_1column),
        (SELECT COUNT(*) FROM t_range_100k_2column),
        (SELECT COUNT(*) FROM t_range_100k_3column),
-       (SELECT COUNT(*) FROM t_range_100k_4column);
+       (SELECT COUNT(*) FROM t_range_100k_4column),
+       (SELECT COUNT(*) FROM t_buckets_4),
+       (SELECT COUNT(*) FROM t_buckets_8),
+       (SELECT COUNT(*) FROM t_buckets_16),
+       (SELECT COUNT(*) FROM t_buckets_32);

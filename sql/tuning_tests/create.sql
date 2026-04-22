@@ -102,5 +102,5 @@ INSERT INTO t_buckets_8 (SELECT s, s FROM generate_series(1, 10000000));
 CREATE TABLE t_buckets_16 (k1 INT, v1 INT, bucket_id INT GENERATED ALWAYS AS (yb_hash_code(k1) % 16) STORED, PRIMARY KEY (bucket_id ASC, k1 ASC));
 INSERT INTO t_buckets_16 (SELECT s, s FROM generate_series(1, 10000000));
 
-CREATE TABLE t_buckets_32_idx (k1 INT, v1 INT, bucket_id INT GENERATED ALWAYS AS (yb_hash_code(k1) % 32) STORED, PRIMARY KEY (bucket_id ASC, k1 ASC));
-INSERT INTO t_buckets_32_idx (SELECT s, s FROM generate_series(1, 10000000));
+CREATE TABLE t_buckets_32 (k1 INT, v1 INT, bucket_id INT GENERATED ALWAYS AS (yb_hash_code(k1) % 32) STORED, PRIMARY KEY (bucket_id ASC, k1 ASC));
+INSERT INTO t_buckets_32 (SELECT s, s FROM generate_series(1, 10000000));
