@@ -23,3 +23,7 @@ ANALYZE t_real_100k;
 ANALYZE t_char4_100k;
 ANALYZE t_char8_100k;
 ANALYZE t_char16_100k;
+ANALZYE t_buckets_4;
+ANALZYE t_buckets_8;
+ANALZYE t_buckets_16;
+ANALZYE t_buckets_32;
