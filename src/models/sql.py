@@ -88,7 +88,11 @@ class SQLModel(QTFModel):
                                     model_queries = self.process_query(cur, query, model_queries, do_execute=do_execute)
                                     executed = True
                                 except Exception as e:
-                                    if "RPC" not in str(e):
+                                    if re.search(r"\bCREATE\s+STATISTICS\b", query, re.IGNORECASE):
+                                        self.logger.warning(
+                                            f"Ignoring CREATE STATISTICS failure: {e}")
+                                        executed = True
+                                    elif "RPC" not in str(e):
                                         raise e
 
 
