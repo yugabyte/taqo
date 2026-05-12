@@ -771,3 +771,43 @@ LATERAL (
 ) z
 WHERE z.dr <= 24
 ORDER BY src.c1, src.c2;
+
+
+
+WITH src AS (
+    SELECT c1, c2
+    FROM t1000
+    WHERE c1 > c2
+)
+SELECT
+    src.c1,
+    src.c2,
+    z.c6,
+    z.dr
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            w.c1,
+            w.c4,
+            w.c6,
+
+            dense_rank() OVER (
+                ORDER BY w.c6 ASC
+            ) dr,
+
+            row_number() OVER (
+                PARTITION BY w.c1
+                ORDER BY w.c6 ASC
+            ) rn
+
+        FROM t100000w w
+        WHERE abs(w.c6 - src.c2) % 47
+              IN (3,9,15,21,27,33)
+          AND greatest(w.c6, src.c2, 1) < 1000000
+    ) sub
+    WHERE sub.rn <= 45
+) z
+WHERE z.dr <= 26
+ORDER BY src.c1, src.c2;
