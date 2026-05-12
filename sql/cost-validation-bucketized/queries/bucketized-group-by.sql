@@ -640,3 +640,134 @@ LATERAL (
       AND substr(s.v,1,1) = '_'
 ) x
 ORDER BY s.c1, x.c6;
+
+SELECT
+    w.c1,
+    w.c2,
+    w.c6,
+    t.c4
+FROM t100000w w
+JOIN t100000 t
+  ON t.c1 = w.c1
+ AND w.c6 IS NOT NULL
+ AND t.c4 > 0
+ORDER BY
+    w.c1 DESC,
+    w.c6 DESC;
+
+
+WITH src AS (
+    SELECT c1, c2
+    FROM t1000
+    WHERE c1 <> c2
+)
+SELECT
+    src.c1,
+    src.c2,
+    z.c5,
+    z.dr
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            m.c1,
+            m.c2,
+            m.c5,
+
+            dense_rank() OVER (
+                ORDER BY m.c5 ASC
+            ) dr,
+
+            row_number() OVER (
+                PARTITION BY m.c1
+                ORDER BY m.c5 ASC
+            ) rn
+
+        FROM t1000000m m
+        WHERE greatest(m.c5, src.c2) - least(m.c5, src.c2) < 100
+          AND mod(m.c5 + src.c2, 17) IN (1,5,9,13)
+    ) sub
+    WHERE sub.rn <= 40
+) z
+WHERE z.dr <= 22
+ORDER BY src.c1, src.c2;
+
+
+
+WITH src AS (
+    SELECT c1, c5
+    FROM t1000000m
+    WHERE c5 IS NOT NULL
+)
+SELECT
+    src.c1,
+    src.c5,
+    z.c3,
+    z.dr
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            w.c1,
+            w.c3,
+            w.c5,
+
+            dense_rank() OVER (
+                ORDER BY w.c3 DESC
+            ) dr,
+
+            row_number() OVER (
+                PARTITION BY w.c1
+                ORDER BY w.c3 DESC
+            ) rn
+
+        FROM t100000w w
+        WHERE mod(abs(w.c5 - src.c5), 19) IN (1,5,9,13,17)
+    ) sub
+    WHERE sub.rn <= 50
+) z
+WHERE z.dr <= 20
+ORDER BY src.c1, src.c5;
+
+
+
+
+WITH src AS (
+    SELECT c1, c2
+    FROM t1000
+    WHERE c1 <> c2
+)
+SELECT
+    src.c1,
+    src.c2,
+    z.c5,
+    z.dr
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            m.c1,
+            m.c2,
+            m.c5,
+
+            dense_rank() OVER (
+                ORDER BY m.c5 ASC
+            ) dr,
+
+            row_number() OVER (
+                PARTITION BY m.c1
+                ORDER BY m.c5 ASC
+            ) rn
+
+        FROM t1000000m m
+        WHERE abs(m.c5 - src.c2) % 17
+              IN (1,5,9,13)
+          AND greatest(m.c5, src.c2, 0) < 100000
+    ) sub
+    WHERE sub.rn <= 40
+) z
+WHERE z.dr <= 24
+ORDER BY src.c1, src.c2;
