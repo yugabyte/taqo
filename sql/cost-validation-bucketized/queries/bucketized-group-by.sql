@@ -506,3 +506,137 @@ LIMIT 50000;
 SELECT m.c2, w.c3, t.c4 FROM t1000000m m JOIN t100000w w ON m.c2 = w.c2 JOIN t100000 t ON t.c2 = m.c2 AND t.c3 = w.c3
 WHERE ((m.c2 > m.c3 AND w.c4 IS NOT NULL AND t.c4 IS NOT NULL) OR (m.c2 = ANY (ARRAY[10010,10020,10030,10040,10050,10060,10070,10080]) AND m.c2 >= 10000 AND m.c2 <= 500000))
 ORDER BY m.c2, w.c3, t.c4;
+
+
+WITH src AS (
+    SELECT c1, c2
+    FROM t1000
+    WHERE c1 <> c2
+)
+SELECT
+    src.c1,
+    src.c2,
+    z.c5,
+    z.rnk
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            m.c1,
+            m.c2,
+            m.c5,
+
+            rank() OVER (
+                ORDER BY m.c5 ASC
+            ) rnk,
+
+            row_number() OVER (
+                PARTITION BY m.c1
+                ORDER BY m.c5 ASC
+            ) rn
+
+        FROM t1000000m m
+        WHERE greatest(m.c5, src.c2) - least(m.c5, src.c2) < 25
+    ) sub
+    WHERE sub.rn <= 30
+) z
+WHERE z.rnk <= 20
+ORDER BY src.c1, src.c2;
+
+
+
+
+WITH src AS (
+    SELECT c1, c6
+    FROM t1000000m
+    WHERE c6 IS NOT NULL
+)
+SELECT
+    src.c1,
+    src.c6,
+    z.c4,
+    z.dr
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            w.c1,
+            w.c4,
+            w.c6,
+
+            dense_rank() OVER (
+                ORDER BY w.c4 DESC
+            ) dr,
+
+            row_number() OVER (
+                PARTITION BY w.c1
+                ORDER BY w.c4 DESC
+            ) rn
+
+        FROM t100000w w
+        WHERE power(abs(w.c6 - src.c6), 2)::bigint % 17 IN (2,4,8,16)
+    ) sub
+    WHERE sub.rn <= 50
+) z
+WHERE z.dr <= 18
+ORDER BY src.c1, src.c6;
+
+
+WITH s AS (
+    SELECT c1, c6
+    FROM t1000000m
+    WHERE c6 > 0
+)
+SELECT
+    s.c1,
+    s.c6,
+    x.c3
+FROM s,
+LATERAL (
+    SELECT
+        c1,
+        c3
+    FROM t100000
+    WHERE c1 = s.c1
+      AND c3 NOT IN (
+          SELECT c3
+          FROM t100
+          WHERE c2 < c4
+      )
+      AND abs(c3 - coalesce(s.c6,0)) % 9 IN (1,5,7)
+      AND greatest(c3, coalesce(s.c6,0), 100) < 1000
+      AND least(c3, coalesce(s.c6,0), 10000) > 5
+      AND sqrt(abs(s.c6))::int >= 0
+) x
+ORDER BY s.c1, x.c3;
+
+
+WITH s AS (
+    SELECT c1, v
+    FROM t10000
+    WHERE v LIKE '___%'
+)
+SELECT
+    s.c1,
+    s.v,
+    x.c6
+FROM s,
+LATERAL (
+    SELECT
+        c1,
+        c6
+    FROM t1000000m
+    WHERE c1 = s.c1
+      AND c6 NOT IN (
+          SELECT c6
+          FROM t1000
+          WHERE c4 IS NULL
+      )
+      AND abs(c6 - coalesce(s.c1,0)) % 13 IN (2,6,10)
+      AND greatest(c6, coalesce(s.c1,0), 75) < 2500
+      AND least(c6, coalesce(s.c1,0), 100000) > 50
+      AND substr(s.v,1,1) = '_'
+) x
+ORDER BY s.c1, x.c6;
