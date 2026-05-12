@@ -150,22 +150,6 @@ FROM (
 GROUP BY sub.c2
 ORDER BY sub.c2;
 
-WITH w_filtered AS (
-    SELECT c1, c2, v
-    FROM t100000w
-    WHERE bucketid IN (0,1,2) AND c1 > 0
-),
-m_filtered AS (
-    SELECT c1, c2, c3, c6
-    FROM t1000000m
-    WHERE c2 BETWEEN 100 AND 10000
-)
-SELECT wf.c2, count(*) AS cnt, avg(mf.c3) AS avg_c3, sum(mf.c6) AS sum_c6
-FROM w_filtered wf
-JOIN m_filtered mf ON wf.c1 = mf.c1 AND wf.c2 = mf.c2
-GROUP BY wf.c2
-ORDER BY wf.c2;
-
 
 SELECT c2,
        count(*) AS total,
@@ -406,3 +390,119 @@ SELECT c2,
 FROM t10000
 GROUP BY c2
 ORDER BY c2;
+
+
+SELECT DISTINCT ON (w.c2)
+    w.c2,
+    w.c3,
+    w.c4,
+    m.c6
+FROM t100000w w
+JOIN t1000000m m
+  ON m.c2 = w.c2
+WHERE w.c3 BETWEEN 100 AND 50000
+  AND m.c6 > 0
+ORDER BY w.c2, w.c4 DESC, m.c6 DESC;
+
+
+WITH RECURSIVE chains AS (
+    SELECT
+        c1,
+        c2,
+        c3,
+        1 AS depth
+    FROM t100
+    WHERE c2 BETWEEN 1 AND 20
+
+    UNION ALL
+
+    SELECT
+        t.c1,
+        t.c2,
+        t.c3,
+        c.depth + 1
+    FROM chains c
+    JOIN t1000 t
+      ON t.c2 = c.c2
+     AND t.c3 BETWEEN c.c3 - 5
+                  AND c.c3 + 5
+    WHERE c.depth < 6
+)
+SELECT
+    c2,
+    count(*) AS cnt,
+    avg(c3) AS avg_c3,
+    max(depth) AS max_depth
+FROM chains
+GROUP BY c2
+ORDER BY cnt DESC, c2
+LIMIT 100;
+
+
+
+
+SELECT
+    m.c2, w.c3, t.c4, s.c5,
+    rank() OVER (
+        PARTITION BY m.c2
+        ORDER BY w.c3 DESC, t.c4 DESC
+    ) AS rnk,
+
+    row_number() OVER (
+        PARTITION BY m.c2
+        ORDER BY s.c5 DESC
+    ) AS rn
+
+FROM t1000000m m
+JOIN t100000w w ON m.c2 = w.c2
+JOIN t100000 t
+  ON t.c2 = m.c2
+ AND t.c3 BETWEEN m.c3 - 50
+              AND m.c3 + 50
+JOIN t1000000m s
+  ON s.c2 = m.c2
+ AND s.c3 BETWEEN m.c3 - 20
+              AND m.c3 + 20
+WHERE
+(
+    m.c2 > m.c3
+    AND w.c4 IS NOT NULL
+)
+OR
+(
+    m.c2 = ANY (
+        ARRAY[
+            10010,
+            10020,
+            10030,
+            10040,
+            10050,
+            10060,
+            10070,
+            10080,
+            10090,
+            10100,
+            10110,
+            10120,
+            10130,
+            10140,
+            10150,
+            10160
+        ]
+    )
+
+    AND m.c2 >= 10000
+    AND m.c2 <= 500000
+    AND abs(m.c2) >= 10000
+)
+AND t.c4 IS NOT NULL AND s.c5 IS NOT NULL
+ORDER BY
+    m.c2, w.c3, t.c4 DESC, s.c5 DESC
+LIMIT 50000;
+
+
+
+
+SELECT m.c2, w.c3, t.c4 FROM t1000000m m JOIN t100000w w ON m.c2 = w.c2 JOIN t100000 t ON t.c2 = m.c2 AND t.c3 = w.c3
+WHERE ((m.c2 > m.c3 AND w.c4 IS NOT NULL AND t.c4 IS NOT NULL) OR (m.c2 = ANY (ARRAY[10010,10020,10030,10040,10050,10060,10070,10080]) AND m.c2 >= 10000 AND m.c2 <= 500000))
+ORDER BY m.c2, w.c3, t.c4;

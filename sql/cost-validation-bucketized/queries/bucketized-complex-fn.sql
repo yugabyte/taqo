@@ -380,3 +380,67 @@ select c1, c2, c5,
 from t1000000m
 where bucketid in (0,1,2)
 order by c1, c2;
+
+
+WITH seed AS (
+    SELECT c1
+    FROM t100
+    WHERE bucketid IN (0,1,2)
+)
+SELECT seed.c1, t.c2, t.c3
+FROM seed,
+LATERAL (
+    SELECT a.c2, b.c3
+    FROM t10000 a
+    FULL JOIN t10000 b
+      ON a.c1 = b.c1
+    WHERE a.c1 = seed.c1
+      AND nullif(a.c2, 0) IS NOT NULL
+      AND coalesce(a.c3, 0) + coalesce(b.c3, 0) < 150
+      AND abs(coalesce(a.c4, 0) - coalesce(b.c4, 0)) BETWEEN 1 AND 500
+      AND mod(coalesce(a.c2, 0) + coalesce(b.c2, 0), 11) IN (2,4,8)
+) t
+ORDER BY t.c2, t.c3;
+
+
+WITH seed AS (
+    SELECT c1
+    FROM t100
+    WHERE bucketid IN (0,1,2)
+)
+SELECT seed.c1, t.c2, t.c4
+FROM seed,
+LATERAL (
+    SELECT a.c2, b.c4
+    FROM t10000 a
+    FULL JOIN t10000 b
+      ON a.c1 = b.c1
+    WHERE a.c1 = seed.c1
+      AND coalesce(a.c2, 0) > 10
+      AND sign(coalesce(a.c3, 0) - coalesce(b.c3, 0)) >= 0
+      AND power(coalesce(a.c4, 0) - coalesce(b.c4, 0), 2) < 10000
+      AND mod(abs(coalesce(a.c2, 0) - coalesce(b.c2, 0)), 13) IN (1,5,9)
+) t
+ORDER BY t.c2, t.c4;
+
+
+WITH seed AS (
+    SELECT c1
+    FROM t100
+    WHERE bucketid IN (0,1,2)
+)
+SELECT seed.c1, t.c2, t.c3
+FROM seed,
+LATERAL (
+    SELECT a.c2, b.c3
+    FROM t10000 a
+    FULL JOIN t10000 b
+      ON a.c1 = b.c1
+    WHERE a.c1 = seed.c1
+      AND coalesce(a.c2, 0) > 10
+      AND width_bucket(coalesce(a.c3, 0), 0, 2000, 10) <= 5
+      AND width_bucket(coalesce(b.c4, 0), 0, 2000, 10) BETWEEN 1 AND 7
+      AND mod(abs(coalesce(a.c5, 0) - coalesce(b.c5, 0)), 19) IN (2,6,10,14)
+) t
+ORDER BY t.c2, t.c3;
+
