@@ -92,3 +92,45 @@ WHERE EXISTS (
     WHERE t.c2 = t2.c2
 )
 ORDER BY c1,c2;
+
+
+SELECT c2, c3
+FROM t1000
+WHERE c2 > c3 AND c3 < c4
+    OR c2 = ANY (
+        ARRAY[
+            100,
+            101,
+            102,
+            103,
+            104,
+            105,
+            106,
+            107,
+            108,
+            109
+        ]
+    )
+    AND c2 >= 100
+ORDER BY c2, c3;
+
+
+SELECT c4, c5
+FROM table_bucketized
+WHERE c4 > c5 AND c6 IS NOT NULL
+    OR c4 = ANY (
+        ARRAY[
+            10000,
+            10001,
+            10002,
+            10003,
+            10004,
+            10005,
+            10006,
+            10007,
+            10008,
+            10009
+        ]
+    )
+    AND c4 >= 10000
+ORDER BY c4, c5;

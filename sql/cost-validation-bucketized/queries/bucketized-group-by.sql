@@ -150,22 +150,6 @@ FROM (
 GROUP BY sub.c2
 ORDER BY sub.c2;
 
-WITH w_filtered AS (
-    SELECT c1, c2, v
-    FROM t100000w
-    WHERE bucketid IN (0,1,2) AND c1 > 0
-),
-m_filtered AS (
-    SELECT c1, c2, c3, c6
-    FROM t1000000m
-    WHERE c2 BETWEEN 100 AND 10000
-)
-SELECT wf.c2, count(*) AS cnt, avg(mf.c3) AS avg_c3, sum(mf.c6) AS sum_c6
-FROM w_filtered wf
-JOIN m_filtered mf ON wf.c1 = mf.c1 AND wf.c2 = mf.c2
-GROUP BY wf.c2
-ORDER BY wf.c2;
-
 
 SELECT c2,
        count(*) AS total,
@@ -406,3 +390,424 @@ SELECT c2,
 FROM t10000
 GROUP BY c2
 ORDER BY c2;
+
+
+SELECT DISTINCT ON (w.c2)
+    w.c2,
+    w.c3,
+    w.c4,
+    m.c6
+FROM t100000w w
+JOIN t1000000m m
+  ON m.c2 = w.c2
+WHERE w.c3 BETWEEN 100 AND 50000
+  AND m.c6 > 0
+ORDER BY w.c2, w.c4 DESC, m.c6 DESC;
+
+
+WITH RECURSIVE chains AS (
+    SELECT
+        c1,
+        c2,
+        c3,
+        1 AS depth
+    FROM t100
+    WHERE c2 BETWEEN 1 AND 20
+
+    UNION ALL
+
+    SELECT
+        t.c1,
+        t.c2,
+        t.c3,
+        c.depth + 1
+    FROM chains c
+    JOIN t1000 t
+      ON t.c2 = c.c2
+     AND t.c3 BETWEEN c.c3 - 5
+                  AND c.c3 + 5
+    WHERE c.depth < 6
+)
+SELECT
+    c2,
+    count(*) AS cnt,
+    avg(c3) AS avg_c3,
+    max(depth) AS max_depth
+FROM chains
+GROUP BY c2
+ORDER BY cnt DESC, c2
+LIMIT 100;
+
+
+
+
+SELECT
+    m.c2, w.c3, t.c4, s.c5,
+    rank() OVER (
+        PARTITION BY m.c2
+        ORDER BY w.c3 DESC, t.c4 DESC
+    ) AS rnk,
+
+    row_number() OVER (
+        PARTITION BY m.c2
+        ORDER BY s.c5 DESC
+    ) AS rn
+
+FROM t1000000m m
+JOIN t100000w w ON m.c2 = w.c2
+JOIN t100000 t
+  ON t.c2 = m.c2
+ AND t.c3 BETWEEN m.c3 - 50
+              AND m.c3 + 50
+JOIN t1000000m s
+  ON s.c2 = m.c2
+ AND s.c3 BETWEEN m.c3 - 20
+              AND m.c3 + 20
+WHERE
+(
+    m.c2 > m.c3
+    AND w.c4 IS NOT NULL
+)
+OR
+(
+    m.c2 = ANY (
+        ARRAY[
+            10010,
+            10020,
+            10030,
+            10040,
+            10050,
+            10060,
+            10070,
+            10080,
+            10090,
+            10100,
+            10110,
+            10120,
+            10130,
+            10140,
+            10150,
+            10160
+        ]
+    )
+
+    AND m.c2 >= 10000
+    AND m.c2 <= 500000
+    AND abs(m.c2) >= 10000
+)
+AND t.c4 IS NOT NULL AND s.c5 IS NOT NULL
+ORDER BY
+    m.c2, w.c3, t.c4 DESC, s.c5 DESC
+LIMIT 50000;
+
+
+
+
+SELECT m.c2, w.c3, t.c4 FROM t1000000m m JOIN t100000w w ON m.c2 = w.c2 JOIN t100000 t ON t.c2 = m.c2 AND t.c3 = w.c3
+WHERE ((m.c2 > m.c3 AND w.c4 IS NOT NULL AND t.c4 IS NOT NULL) OR (m.c2 = ANY (ARRAY[10010,10020,10030,10040,10050,10060,10070,10080]) AND m.c2 >= 10000 AND m.c2 <= 500000))
+ORDER BY m.c2, w.c3, t.c4;
+
+
+WITH src AS (
+    SELECT c1, c2
+    FROM t1000
+    WHERE c1 <> c2
+)
+SELECT
+    src.c1,
+    src.c2,
+    z.c5,
+    z.rnk
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            m.c1,
+            m.c2,
+            m.c5,
+
+            rank() OVER (
+                ORDER BY m.c5 ASC
+            ) rnk,
+
+            row_number() OVER (
+                PARTITION BY m.c1
+                ORDER BY m.c5 ASC
+            ) rn
+
+        FROM t1000000m m
+        WHERE greatest(m.c5, src.c2) - least(m.c5, src.c2) < 25
+    ) sub
+    WHERE sub.rn <= 30
+) z
+WHERE z.rnk <= 20
+ORDER BY src.c1, src.c2;
+
+
+
+
+WITH src AS (
+    SELECT c1, c6
+    FROM t1000000m
+    WHERE c6 IS NOT NULL
+)
+SELECT
+    src.c1,
+    src.c6,
+    z.c4,
+    z.dr
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            w.c1,
+            w.c4,
+            w.c6,
+
+            dense_rank() OVER (
+                ORDER BY w.c4 DESC
+            ) dr,
+
+            row_number() OVER (
+                PARTITION BY w.c1
+                ORDER BY w.c4 DESC
+            ) rn
+
+        FROM t100000w w
+        WHERE power(abs(w.c6 - src.c6), 2)::bigint % 17 IN (2,4,8,16)
+    ) sub
+    WHERE sub.rn <= 50
+) z
+WHERE z.dr <= 18
+ORDER BY src.c1, src.c6;
+
+
+WITH s AS (
+    SELECT c1, c6
+    FROM t1000000m
+    WHERE c6 > 0
+)
+SELECT
+    s.c1,
+    s.c6,
+    x.c3
+FROM s,
+LATERAL (
+    SELECT
+        c1,
+        c3
+    FROM t100000
+    WHERE c1 = s.c1
+      AND c3 NOT IN (
+          SELECT c3
+          FROM t100
+          WHERE c2 < c4
+      )
+      AND abs(c3 - coalesce(s.c6,0)) % 9 IN (1,5,7)
+      AND greatest(c3, coalesce(s.c6,0), 100) < 1000
+      AND least(c3, coalesce(s.c6,0), 10000) > 5
+      AND sqrt(abs(s.c6))::int >= 0
+) x
+ORDER BY s.c1, x.c3;
+
+
+WITH s AS (
+    SELECT c1, v
+    FROM t10000
+    WHERE v LIKE '___%'
+)
+SELECT
+    s.c1,
+    s.v,
+    x.c6
+FROM s,
+LATERAL (
+    SELECT
+        c1,
+        c6
+    FROM t1000000m
+    WHERE c1 = s.c1
+      AND c6 NOT IN (
+          SELECT c6
+          FROM t1000
+          WHERE c4 IS NULL
+      )
+      AND abs(c6 - coalesce(s.c1,0)) % 13 IN (2,6,10)
+      AND greatest(c6, coalesce(s.c1,0), 75) < 2500
+      AND least(c6, coalesce(s.c1,0), 100000) > 50
+      AND substr(s.v,1,1) = '_'
+) x
+ORDER BY s.c1, x.c6;
+
+SELECT
+    w.c1,
+    w.c2,
+    w.c6,
+    t.c4
+FROM t100000w w
+JOIN t100000 t
+  ON t.c1 = w.c1
+ AND w.c6 IS NOT NULL
+ AND t.c4 > 0
+ORDER BY
+    w.c1 DESC,
+    w.c6 DESC;
+
+
+WITH src AS (
+    SELECT c1, c2
+    FROM t1000
+    WHERE c1 <> c2
+)
+SELECT
+    src.c1,
+    src.c2,
+    z.c5,
+    z.dr
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            m.c1,
+            m.c2,
+            m.c5,
+
+            dense_rank() OVER (
+                ORDER BY m.c5 ASC
+            ) dr,
+
+            row_number() OVER (
+                PARTITION BY m.c1
+                ORDER BY m.c5 ASC
+            ) rn
+
+        FROM t1000000m m
+        WHERE greatest(m.c5, src.c2) - least(m.c5, src.c2) < 100
+          AND mod(m.c5 + src.c2, 17) IN (1,5,9,13)
+    ) sub
+    WHERE sub.rn <= 40
+) z
+WHERE z.dr <= 22
+ORDER BY src.c1, src.c2;
+
+
+
+WITH src AS (
+    SELECT c1, c5
+    FROM t1000000m
+    WHERE c5 IS NOT NULL
+)
+SELECT
+    src.c1,
+    src.c5,
+    z.c3,
+    z.dr
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            w.c1,
+            w.c3,
+            w.c5,
+
+            dense_rank() OVER (
+                ORDER BY w.c3 DESC
+            ) dr,
+
+            row_number() OVER (
+                PARTITION BY w.c1
+                ORDER BY w.c3 DESC
+            ) rn
+
+        FROM t100000w w
+        WHERE mod(abs(w.c5 - src.c5), 19) IN (1,5,9,13,17)
+    ) sub
+    WHERE sub.rn <= 50
+) z
+WHERE z.dr <= 20
+ORDER BY src.c1, src.c5;
+
+
+
+
+WITH src AS (
+    SELECT c1, c2
+    FROM t1000
+    WHERE c1 <> c2
+)
+SELECT
+    src.c1,
+    src.c2,
+    z.c5,
+    z.dr
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            m.c1,
+            m.c2,
+            m.c5,
+
+            dense_rank() OVER (
+                ORDER BY m.c5 ASC
+            ) dr,
+
+            row_number() OVER (
+                PARTITION BY m.c1
+                ORDER BY m.c5 ASC
+            ) rn
+
+        FROM t1000000m m
+        WHERE abs(m.c5 - src.c2) % 17
+              IN (1,5,9,13)
+          AND greatest(m.c5, src.c2, 0) < 100000
+    ) sub
+    WHERE sub.rn <= 40
+) z
+WHERE z.dr <= 24
+ORDER BY src.c1, src.c2;
+
+
+
+WITH src AS (
+    SELECT c1, c2
+    FROM t1000
+    WHERE c1 > c2
+)
+SELECT
+    src.c1,
+    src.c2,
+    z.c6,
+    z.dr
+FROM src,
+LATERAL (
+    SELECT *
+    FROM (
+        SELECT
+            w.c1,
+            w.c4,
+            w.c6,
+
+            dense_rank() OVER (
+                ORDER BY w.c6 ASC
+            ) dr,
+
+            row_number() OVER (
+                PARTITION BY w.c1
+                ORDER BY w.c6 ASC
+            ) rn
+
+        FROM t100000w w
+        WHERE abs(w.c6 - src.c2) % 47
+              IN (3,9,15,21,27,33)
+          AND greatest(w.c6, src.c2, 1) < 1000000
+    ) sub
+    WHERE sub.rn <= 45
+) z
+WHERE z.dr <= 26
+ORDER BY src.c1, src.c2;
