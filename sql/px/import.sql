@@ -34,3 +34,37 @@ INSERT INTO t5m
   SELECT row_number() OVER (), tmp1.v, tmp2.v, tmp3.v,
       lpad(sha512((tmp1.v#tmp2.v#tmp3.v)::bpchar::bytea)::bpchar, 1536, '-')
   FROM tmp1 JOIN tmp2 USING (id) JOIN tmp3 USING(id);
+
+
+SELECT setseed(0.777);
+-- insert into ord
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(0,249999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(250000,499999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(500000,749999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(750000,999999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(1000000,1249999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(1250000,1499999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(1500000,1749999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(1750000,1999999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(2000000,2249999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(2250000,2499999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(2500000,2749999) g;
+INSERT INTO ord SELECT g, g/100, g%1000, timestamptz '2026-07-01' - (g%7776000) * interval '1 second', (array['new','paid','shipped','done','cancelled'])[1+g%5], ((g::bigint*7919)%10000000)::numeric/100, repeat(md5(g::text),6) FROM generate_series(2750000,2999999) g;
+
+
+-- insert into events
+INSERT INTO events SELECT g, g%97, timestamptz '2026-07-01' - (g%2592000) * interval '1 second',
+       ((g::bigint*7919)%1000000)::numeric/100, md5(g::text)
+FROM generate_series(0,399999) g;
+INSERT INTO events SELECT g, g%97, timestamptz '2026-07-01' - (g%2592000) * interval '1 second',
+       ((g::bigint*7919)%1000000)::numeric/100, md5(g::text)
+FROM generate_series(400000,799999) g;
+
+
+-- insert into events_h
+INSERT INTO events_h SELECT g, g%97, timestamptz '2026-07-01' - (g%2592000) * interval '1 second',
+       ((g::bigint*7919)%1000000)::numeric/100, md5(g::text)
+FROM generate_series(0,399999) g;
+INSERT INTO events_h SELECT g, g%97, timestamptz '2026-07-01' - (g%2592000) * interval '1 second',
+       ((g::bigint*7919)%1000000)::numeric/100, md5(g::text)
+FROM generate_series(400000,799999) g;
