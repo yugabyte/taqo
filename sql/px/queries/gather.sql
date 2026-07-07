@@ -216,3 +216,106 @@ FROM j
 GROUP BY grp;
 
 
+WITH t1 AS (
+    SELECT *
+    FROM events_h
+    WHERE ts >
+        (SELECT max(ts)-interval '6 hours' FROM events_h)
+),
+t2 AS (
+    SELECT *
+    FROM events_h
+    WHERE ts >
+        (SELECT max(ts)-interval '12 hours' FROM events_h)
+),
+t3 AS (
+    SELECT *
+    FROM events_h
+    WHERE ts >
+        (SELECT max(ts)-interval '24 hours' FROM events_h)
+)
+SELECT
+    o.k2,
+    count(DISTINCT t1.id),
+    sum(t2.amt),
+    avg(t3.amt),
+    max(t1.ts),
+    min(t3.ts)
+FROM ord o
+LEFT JOIN t1 USING(id)
+LEFT JOIN t2 USING(id)
+LEFT JOIN t3 USING(id)
+GROUP BY o.k2;
+
+
+SELECT
+    o.k2,
+    count(*),
+    (
+        SELECT count(*)
+        FROM events_h
+        WHERE ts >
+        (
+            SELECT max(ts)-interval '4 hours'
+            FROM events_h
+        )
+    ),
+    (
+        SELECT avg(amt)
+        FROM events_h
+        WHERE ts >
+        (
+            SELECT max(ts)-interval '8 hours'
+            FROM events_h
+        )
+    ),
+    sum(e.amt)
+FROM ord o
+JOIN events_h e USING(id)
+GROUP BY o.k2;
+
+
+WITH t1 AS (
+    SELECT *
+    FROM events_h
+    WHERE ts >
+          (SELECT max(ts)-interval '6 hours' FROM events_h)
+),
+t2 AS (
+    SELECT *
+    FROM events_h
+    WHERE ts >
+          (SELECT max(ts)-interval '12 hours' FROM events_h)
+),
+t3 AS (
+    SELECT *
+    FROM events_h
+    WHERE ts >
+          (SELECT max(ts)-interval '24 hours' FROM events_h)
+),
+u AS (
+    SELECT * FROM t1
+    UNION ALL
+    SELECT * FROM t2
+    UNION ALL
+    SELECT * FROM t3
+),
+d AS (
+    SELECT DISTINCT ON(id,grp)
+           *
+    FROM u
+    ORDER BY id,grp,ts DESC
+)
+SELECT
+    o.k2,
+    d.grp,
+    count(*),
+    sum(d.amt),
+    avg(d.amt),
+    variance(d.amt),
+    max(d.ts) latest_ts,
+    rank() OVER(PARTITION BY o.k2 ORDER BY sum(d.amt) DESC)
+FROM d
+JOIN ord o USING(id)
+GROUP BY o.k2,d.grp
+ORDER BY latest_ts DESC,sum(d.amt) DESC;

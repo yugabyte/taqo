@@ -302,3 +302,93 @@ WHERE revenue >
 )
 ORDER BY rev_rank
 LIMIT 100;
+
+
+WITH recent AS (
+    SELECT *
+    FROM events_h
+    WHERE ts >
+          (
+              SELECT max(ts)-interval '12 hours'
+              FROM events_h
+          )
+),
+joined AS (
+    SELECT DISTINCT
+           e.grp,
+           e.id,
+           e.ts,
+           e.amt,
+           o.k1,
+           o.k2
+    FROM recent e
+    JOIN ord o USING(id)
+),
+ranked AS (
+    SELECT *,
+           row_number() OVER
+             (PARTITION BY grp ORDER BY ts DESC) rn,
+           dense_rank() OVER
+             (PARTITION BY k2 ORDER BY amt DESC) dr
+    FROM joined
+)
+SELECT
+    grp,
+    k2,
+    count(*),
+    sum(amt),
+    avg(amt),
+    max(dr)
+FROM ranked
+WHERE rn<=500
+GROUP BY grp,k2
+HAVING sum(amt)>
+(
+    SELECT avg(total)
+    FROM
+    (
+        SELECT sum(amt) total
+        FROM ranked
+        GROUP BY grp
+    ) x
+)
+ORDER BY sum(amt) DESC;
+
+
+
+WITH base AS (
+    SELECT
+        eh.id,
+        eh.grp,
+        eh.ts,
+        eh.amt,
+        e.grp grp2,
+        e.amt amt2
+    FROM events_h eh
+    JOIN events e USING(id)
+    WHERE eh.ts >
+          (
+            SELECT max(ts)-interval '6 hours'
+            FROM events_h
+          )
+),
+ords AS (
+    SELECT DISTINCT
+           b.*,
+           o.k1,
+           o.k2
+    FROM base b
+    JOIN ord o USING(id)
+)
+SELECT
+    grp,
+    k2,
+    count(*),
+    sum(amt),
+    sum(amt2),
+    avg(amt),
+    avg(amt2),
+    rank() OVER(PARTITION BY grp ORDER BY sum(amt) DESC)
+FROM ords
+GROUP BY grp,k2;
+
