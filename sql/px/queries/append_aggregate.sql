@@ -230,3 +230,75 @@ FROM (
 JOIN ord o USING (id)
 GROUP BY e.grp
 ORDER BY e.grp;
+
+
+
+WITH ids AS (
+    SELECT DISTINCT grp
+    FROM events_h
+    WHERE ts > (
+        SELECT max(ts) - interval '3 hours'
+        FROM events_h
+    )
+)
+SELECT
+    ids.grp,
+    (
+        SELECT count(*)
+        FROM events_h e
+        WHERE e.grp = ids.grp
+          AND e.ts > (
+              SELECT max(ts) - interval '3 hours'
+              FROM events_h
+          )
+    ) AS recent_cnt
+FROM ids
+ORDER BY recent_cnt DESC;
+
+
+WITH recent AS (
+    SELECT id, grp, ts, amt
+    FROM events_h
+    WHERE ts > (
+        SELECT max(ts) - interval '48 hours'
+        FROM events_h
+    )
+),
+joined AS (
+    SELECT DISTINCT
+           r.id,
+           r.grp,
+           r.ts,
+           r.amt,
+           o.k1,
+           o.k2
+    FROM recent r
+    JOIN ord o USING (id)
+),
+grp_stats AS (
+    SELECT
+        grp,
+        k2,
+        count(*) cnt,
+        sum(amt) revenue,
+        avg(amt) avg_amt
+    FROM joined
+    GROUP BY grp, k2
+)
+SELECT
+    grp,
+    k2,
+    cnt,
+    revenue,
+    avg_amt,
+    dense_rank() OVER (ORDER BY revenue DESC) rev_rank,
+    percent_rank() OVER (ORDER BY revenue DESC) pct_rank,
+    revenue / sum(revenue) OVER () AS revenue_share
+FROM grp_stats
+WHERE revenue >
+(
+    SELECT avg(revenue)
+    FROM grp_stats
+)
+ORDER BY rev_rank
+LIMIT 100;

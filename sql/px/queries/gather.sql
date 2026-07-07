@@ -195,3 +195,24 @@ SELECT k2, n, revenue,
 FROM seg_revenue
 WHERE n > (SELECT avg(n) FROM seg_revenue)
 ORDER BY rnk LIMIT 20;
+
+
+WITH j AS (
+    SELECT
+        o.k2,
+        e.grp,
+        e.amt
+    FROM ord o
+    JOIN events_h e
+      ON o.id=e.id
+)
+SELECT
+    grp,
+    count(*),
+    sum(amt),
+    avg(amt),
+    rank() OVER (ORDER BY sum(amt) DESC)
+FROM j
+GROUP BY grp;
+
+
