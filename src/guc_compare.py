@@ -342,6 +342,17 @@ def _safe_avg(times: List[float]) -> float:
     return statistics.mean(times) if times else -1.0
 
 
+_EXEC_TIME_RE = re.compile(r"Execution Time:\s*([\d.]+)\s*ms", re.IGNORECASE)
+
+
+def _extract_exec_ms(plan: Optional[str]) -> Optional[float]:
+    """Extract the Execution Time value (ms) from an EXPLAIN ANALYZE plan string."""
+    if not plan:
+        return None
+    m = _EXEC_TIME_RE.search(plan)
+    return float(m.group(1)) if m else None
+
+
 def run_comparison(args, gucs: GucMap, logger: logging.Logger) -> CompareRun:
     logger.info("Connecting to database ...")
     conn = _connect(args.host, args.port, args.username, args.password, args.database)
@@ -396,6 +407,17 @@ def run_comparison(args, gucs: GucMap, logger: logging.Logger) -> CompareRun:
         qr.plan1 = _fetch_explain_analyze(conn, stmts_before, sql, args.timeout_ms, logger)
         qr.plan2 = _fetch_explain_analyze(conn, stmts_after,  sql, args.timeout_ms, logger)
 
+        # Overwrite avg1/avg2 with EXPLAIN ANALYZE execution time if available,
+        # since that reflects actual DB engine time rather than wall-clock.
+        exec1 = _extract_exec_ms(qr.plan1)
+        exec2 = _extract_exec_ms(qr.plan2)
+        if exec1 is not None:
+            qr.avg1 = exec1
+            logger.info(f"    [{args.label1}] EXPLAIN ANALYZE exec={exec1:.2f} ms")
+        if exec2 is not None:
+            qr.avg2 = exec2
+            logger.info(f"    [{args.label2}] EXPLAIN ANALYZE exec={exec2:.2f} ms")
+
         run.results.append(qr)
 
     conn.close()
@@ -414,6 +436,15 @@ def _load_json(path: str) -> CompareRun:
     results = [QueryResult(**r) for r in data.pop("results", [])]
     run = CompareRun(**data)
     run.results = results
+    # Re-derive avg1/avg2 from EXPLAIN ANALYZE execution time if plans are present.
+    # This handles JSONs saved before the exec-time extraction was added.
+    for qr in run.results:
+        exec1 = _extract_exec_ms(qr.plan1)
+        exec2 = _extract_exec_ms(qr.plan2)
+        if exec1 is not None:
+            qr.avg1 = exec1
+        if exec2 is not None:
+            qr.avg2 = exec2
     return run
 
 
@@ -929,12 +960,21 @@ def generate_html(run: CompareRun, pct_threshold: float, num_retries: int = 0) -
                      if qr.avg1 > 0 and qr.avg2 > 0 else "null")
         timeout_attr = '1' if has_timeout else '0'
 
-        raw1 = ", ".join(f"{t:.2f}" for t in qr.times1) or "-"
-        raw2 = ", ".join(f"{t:.2f}" for t in qr.times2) or "-"
         sql_escaped = html.escape(qr.query_sql)
 
-        cell1_html = f'{_fmt_time(qr.avg1, qr.error1)}<br><small class="gray">raw: {raw1}</small>'
-        cell2_html = f'{_fmt_time(qr.avg2, qr.error2)}<br><small class="gray">raw: {raw2}</small>'
+        def _make_cell(avg: float, error: Optional[str], plan: Optional[str],
+                       wall_times: List[float]) -> str:
+            exec_ms = _extract_exec_ms(plan)
+            if exec_ms is not None:
+                return _fmt_time(avg, error)
+            else:
+                # Fallback: wall-clock avg when no plan available
+                wall_raw = ", ".join(f"{t:.2f}" for t in wall_times) or "-"
+                return (f'{_fmt_time(avg, error)}'
+                        f'<br><small class="gray">wall: {wall_raw} ms</small>')
+
+        cell1_html = _make_cell(qr.avg1, qr.error1, qr.plan1, qr.times1)
+        cell2_html = _make_cell(qr.avg2, qr.error2, qr.plan2, qr.times2)
         # Store both cell contents as JSON strings so JS can swap them on invert.
         # Use single-quote-delimited attributes; json.dumps uses " so we only need to
         # escape & and ' (not "), which json.dumps never emits unescaped anyway.
