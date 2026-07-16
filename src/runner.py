@@ -240,6 +240,9 @@ if __name__ == "__main__":
     parser.add_argument('--num-queries',
                         default=-1,
                         help='Number of queries to evaluate')
+    parser.add_argument('--query-hash',
+                        default=None,
+                        help='Evaluate only the single query matching this query hash')
     parser.add_argument('--parametrized',
                         action=argparse.BooleanOptionalAction,
                         default=False,
@@ -357,6 +360,7 @@ if __name__ == "__main__":
 
         num_queries=int(args.num_queries)
         if args.num_queries is not None else configuration.get("num-queries", -1),
+        query_hash=args.query_hash,
         num_retries=int(configuration.get("num-retries", 5)),
         num_warmup=int(configuration.get("num-warmup", 1)),
 
