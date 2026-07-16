@@ -350,6 +350,10 @@ class SQLModel(QTFModel):
                                 tables=tables_in_query,
                                 optimizer_tips=current_tips))
 
+        if self.config.query_hash:
+            queries = [query for query in queries
+                       if query.query_hash == self.config.query_hash]
+
         if self.config.num_queries > 0:
             queries = queries[:int(self.config.num_queries)]
 

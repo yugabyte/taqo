@@ -101,6 +101,7 @@ class Config(metaclass=Singleton):
     look_near_best_plan: bool = None
 
     num_queries: int = None
+    query_hash: str = None
     parametrized: bool = False
     num_retries: int = None
     num_warmup: int = None
