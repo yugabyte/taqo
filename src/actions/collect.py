@@ -89,8 +89,8 @@ class CollectAction:
 
             if DDLStep.COMPACT in self.config.ddls:
                 self.sut_database.run_compaction(tables=non_catalog_tables)
-        except Exception as e:
-            self.logger.exception("Failed to evaluate DDL queries", e)
+        except Exception:
+            self.logger.exception("Failed to evaluate DDL queries")
             exit(1)
 
         connection.autocommit = False
@@ -163,6 +163,8 @@ class CollectAction:
 
                 except psycopg2.Error as pe:
                     # do not raise exception
+                    if not original_query.error_message:
+                        original_query.error_message = f"{type(pe).__name__}: {pe}".strip()
                     self.logger.exception(f"{original_query}\nFailed because of {pe}")
                 except Exception as e:
                     self.logger.info(original_query)

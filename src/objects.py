@@ -133,6 +133,7 @@ class Query:
     execution_plan: 'ExecutionPlan' = dataclasses.field(default_factory=ExecutionPlan)
     execution_time_ms: float = 0
     execution_times: List[float] = dataclasses.field(default_factory=list)
+    error_message: str = None
     result_cardinality: int = 0
     result_hash: str = None
     has_order_by: bool = False
