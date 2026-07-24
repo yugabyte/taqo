@@ -195,14 +195,6 @@ from t1000000m m
 order by m.c1 desc, m.c2 desc;
 
 
-
-select c1, c2, v
-from t100000w
-  where v not like '%aaa%' and v='aaa'
-order by c1 desc, c2 desc limit 10;
-
-
-
 select c1, c2, v
 from t100000w
   where length(v) > 5
