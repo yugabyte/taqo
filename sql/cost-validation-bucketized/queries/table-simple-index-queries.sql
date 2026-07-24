@@ -47,4 +47,3 @@ SELECT t1.c1, t1.c2, t1.c4, t2.c3 FROM table_simple t1 JOIN table_simple t2 ON t
 SELECT m.c1, m.c2, m.c3, t.c4 FROM table_simple t JOIN table_simple m ON m.c1 = t.c1 AND m.c3 = t.c3 WHERE greatest(m.c1, m.c3) = m.c1 and m.c2=10 ORDER BY m.c1, m.c3;
 SELECT m.c1, m.c2, w.v, t.c3 FROM table_simple m JOIN table_simple w ON w.c1 = m.c1 AND abs(w.c2 - m.c2) = 0 and m.c1=100 JOIN table_simple t ON t.c2 = m.c2 WHERE sign(m.c1 - m.c2) >= 0 ORDER BY m.c1, m.c2;
 SELECT m.c1, m.c2, w.v FROM table_simple m JOIN table_simple w ON w.c1 = m.c1 AND abs(w.c2 - m.c2) = 0 WHERE (m.c3 IN (5, 10, 15) OR m.c4 BETWEEN 100 AND 200) AND m.c1 >= m.c2 ORDER BY m.c1, m.c2 limit 10;
-SELECT a.c1, a.c2, b.c3 FROM table_simple a JOIN table_simple b ON a.c1 = b.c1 AND a.c2 = b.c2 WHERE a.c1 > a.c2 AND b.c1 < b.c2 + 10 and b.c1=20 and a.c1=10 ORDER BY a.c1, a.c2;

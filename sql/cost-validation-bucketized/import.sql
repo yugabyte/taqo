@@ -171,3 +171,54 @@ insert into table_simple
         from generate_series(1, 1000000) i
     ) v order by 1;
 
+
+select setseed(0.222);
+insert into table_hm (c1, c2, c3, c4, c5, c6, v, c7, c8)
+  select i, i2,
+         nullif((i3+4)/5,    (100+4)/5),
+         nullif((i4+9)/10,   (100+9)/10),
+         i5,
+         nullif((i6+99)/100, (100+99)/100),
+         case when i % 10 = 0
+              then lpad(sha512(i::text::bytea)::text, 8192, '-')
+              else sha512(i::text::bytea)::text
+         end,
+         case when i % 100 = 0 then i7 else 0    end,
+         case when i % 50  = 0 then i8 else null end
+    from (
+      select i,
+          row_number() over (order by random())     i2,
+          row_number() over (order by random() + 1) i3,
+          row_number() over (order by random() + 2) i4,
+          row_number() over (order by random() + 3) i5,
+          row_number() over (order by random() + 4) i6,
+          row_number() over (order by random() + 5) i7,
+          row_number() over (order by random() + 6) i8
+        from generate_series(1, 1000000) i
+    ) s order by 1;
+
+
+select setseed(0.222);
+insert into table_split (c1, c2, c3, c4, c5, c6, v, c7, c8)
+  select i, i2,
+         nullif((i3+4)/5,    (100+4)/5),
+         nullif((i4+9)/10,   (100+9)/10),
+         i5,
+         nullif((i6+99)/100, (100+99)/100),
+         case when i % 10 = 0
+              then lpad(sha512(i::text::bytea)::text, 8192, '-')
+              else sha512(i::text::bytea)::text
+         end,
+         case when i % 100 = 0 then i7 else 0    end,
+         case when i % 50  = 0 then i8 else null end
+    from (
+      select i,
+          row_number() over (order by random())     i2,
+          row_number() over (order by random() + 1) i3,
+          row_number() over (order by random() + 2) i4,
+          row_number() over (order by random() + 3) i5,
+          row_number() over (order by random() + 4) i6,
+          row_number() over (order by random() + 5) i7,
+          row_number() over (order by random() + 6) i8
+        from generate_series(1, 1000000) i
+    ) s order by 1;

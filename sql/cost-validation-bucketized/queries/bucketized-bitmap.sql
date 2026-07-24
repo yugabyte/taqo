@@ -50,12 +50,6 @@ select avg(c3) from t1000000m where c5 <= 1000 and (c4 <= 10 or c3 <= 10) limit 
 select avg(c3) from t1000000m where c5 <= 100 and (c4 <= 10 or c3 <= 10) limit 100;
 
 
-SELECT c1, c2, c3
-FROM t10000
-WHERE c1>c2 and c3<c4 and c2<c4 or c1>c4
-ORDER BY c1, c2 limit 100;
-
-
 SELECT a.c1, a.c2, b.c3
 FROM t1000000m a
 JOIN t100000w b
@@ -64,18 +58,12 @@ WHERE a.c1=a.c2 and b.c2>b.c3
 ORDER BY a.c1, a.c2 limit 200;
 
 
-SELECT c2, c3
-FROM t1000
-WHERE c2>c3 and c3<c4
-ORDER BY c2, c3;
-
 SELECT t1.c1, t1.c2, t2.c3
 FROM t100 t1
 JOIN t1000 t2
   ON t1.c2 = t2.c2
 WHERE t1.c2=t2.c4
 ORDER BY t1.c1, t1.c2;
-
 
 
 SELECT m.c1, m.c2, w.v
