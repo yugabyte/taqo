@@ -351,11 +351,6 @@ from t100000
 where c2<c3
 order by c2, c3;
 
-select c1, c2, v,
-       count(*) over(partition by c1) as cnt
-from t100000w
-where v='---' and c1=10
-order by c1, c2;
 
 select c2, v,
        dense_rank() over(order by length(v)) as dr

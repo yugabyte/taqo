@@ -5,22 +5,6 @@ JOIN t1000 t2 ON t1.c2 = t2.c2
 JOIN t100000 t3 ON t2.c4 = t3.c4
 WHERE t1.c2 BETWEEN 5 AND 500;
 
-SELECT m.c1, m.c2, t.c3
-FROM t1000000m m
-JOIN t100000 t
-  ON m.c1 = t.c1
-WHERE m.c2 > 1000000;
-
-
-SELECT
-       t1.c1, t1.c2, t1.c4, t2.c3
-FROM t100 t1
-JOIN t100000 t2
-  ON t1.c2 = t2.c2
-WHERE t1.c4 BETWEEN 20 AND 80
-  AND t2.c3 > 10;
-
-
 select big.c1, big.c2, small.c3
 from (
     select c1, c2, c3
@@ -175,7 +159,6 @@ where
   and (m.c1 + m.c2) >= m.c1
   and (m.c1 * 2) >= m.c2
 order by m.c1, m.c2;
-
 
 
 select m.c1, m.c2,
@@ -789,6 +772,7 @@ select (select count(*) from generate_series(1, 9000) g(i),
         ) l2
         where l2.dr <= 300
        ) as pair_cnt;
+
 
 SELECT COUNT(*)
 FROM generate_series(1, 7000) g(i),

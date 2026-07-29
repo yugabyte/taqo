@@ -65,6 +65,12 @@ create statistics table_bucketized_c2c2expr on c2, (c2*2 - c2) from table_bucket
 create statistics table_bucketized_c3c4 on c3, c4 from table_bucketized;
 create statistics table_bucketized_c4c4expr on c2, (c4*2 - c4) from table_bucketized;
 
+create statistics table_hm_c1c4 on c1, c4 from table_hm;
+create statistics table_hm_c3c4 on c3, c4 from table_hm;
+
+create statistics table_split_c1c4 on c1, c4 from table_split;
+create statistics table_split_c3c4 on c3, c4 from table_split;
+
 
 analyze t100;
 analyze t1000;
@@ -74,3 +80,5 @@ analyze t100000w;
 analyze t1000000m;
 analyze table_simple;
 analyze table_bucketized;
+analyze table_hm;
+analyze table_split;

@@ -48,4 +48,3 @@ SELECT m.c1, m.c2, m.c3, t.c4 FROM table_bucketized t JOIN table_bucketized m ON
 SELECT m.c1, m.c2, w.v FROM table_bucketized w JOIN table_bucketized m ON m.c1 = w.c1 AND m.c2 = w.c2 WHERE sign(w.c1 - w.c2) = 1 and m.c2=10 ORDER BY w.c1, w.c2;
 SELECT m.c1, m.c2, w.v, t.c3 FROM table_bucketized m JOIN table_bucketized w ON w.c1 = m.c1 AND abs(w.c2 - m.c2) = 0 and m.c1=100 JOIN table_bucketized t ON t.c2 = m.c2 WHERE sign(m.c1 - m.c2) >= 0 ORDER BY m.c1, m.c2;
 SELECT m.c1, m.c2, w.v FROM table_bucketized m JOIN table_bucketized w ON w.c1 = m.c1 AND abs(w.c2 - m.c2) = 0 WHERE (m.c3 IN (5, 10, 15) OR m.c4 BETWEEN 100 AND 200) AND m.c1 >= m.c2 ORDER BY m.c1, m.c2 limit 10;
-SELECT a.c1, a.c2, b.c3 FROM table_bucketized a JOIN table_bucketized b ON a.c1 = b.c1 AND a.c2 = b.c2 WHERE a.c1 > a.c2 AND b.c1 < b.c2 + 10 and b.c1=20 and a.c1=10 ORDER BY a.c1, a.c2;

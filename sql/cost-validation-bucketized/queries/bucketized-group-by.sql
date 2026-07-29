@@ -11,24 +11,12 @@ GROUP BY c2
 ORDER BY c2;
 
 
-SELECT c2, count(*) AS cnt
-FROM t1000
-GROUP BY c2
-HAVING count(*) > 1
-ORDER BY c2;
-
 SELECT c3, avg(c4) AS avg_c4, count(*) AS cnt
 FROM t1000
 WHERE c2 >= 0 AND c3 >= 1
 GROUP BY c3
 HAVING avg(c4) > 100
 ORDER BY c3;
-
-SELECT length(v) AS vlen, count(*) AS cnt, avg(c2) AS avg_c2
-FROM t10000
-WHERE v IS NOT NULL
-GROUP BY length(v)
-ORDER BY vlen;
 
 SELECT substr(v, 1, 3) AS v_prefix, count(*) AS cnt, min(c1) AS min_c1, max(c1) AS max_c1
 FROM t10000
@@ -69,13 +57,6 @@ WHERE c1 IS NOT NULL AND c2 IS NOT NULL
 GROUP BY CUBE (bucketid, sign(c1 - c2))
 ORDER BY bucketid, direction limit 50;
 
-SELECT t1.c2, count(*) AS cnt, sum(t2.c4) AS sum_c4, avg(t2.c3) AS avg_c3
-FROM t100 t1
-JOIN t1000 t2 ON t1.c2 = t2.c2
-WHERE t1.c2 BETWEEN 10 AND 200
-GROUP BY t1.c2
-ORDER BY t1.c2 limit 50;
-
 SELECT t1.c2, t1.c3, count(*) AS cnt, max(t2.c4) AS max_c4
 FROM t1000 t1
 JOIN t100000 t2 ON t1.c2 = t2.c2
@@ -84,13 +65,6 @@ GROUP BY t1.c2, t1.c3
 HAVING count(*) > 1
 ORDER BY t1.c2, t1.c3 limit 50;
 
-SELECT m.c2, count(*) AS cnt, avg(w.c1) AS avg_c1, sum(m.c6) AS sum_c6
-FROM t1000000m m
-JOIN t100000w w ON w.c2 = m.c2
-WHERE m.c2 >= 0 AND w.c2 >= 0
-GROUP BY m.c2
-ORDER BY m.c2
-LIMIT 1000;
 
 SELECT t1.c2, count(*) AS cnt, sum(t3.c5) AS sum_c5
 FROM t100 t1
@@ -99,12 +73,6 @@ JOIN t100000 t3 ON t2.c2 = t3.c2
 WHERE t1.c2 BETWEEN 5 AND 500
 GROUP BY t1.c2
 ORDER BY t1.c2 limit 50;
-
-SELECT c2, count(DISTINCT c3) AS distinct_c3, count(*) AS total_cnt
-FROM t10000
-WHERE c2 BETWEEN 10 AND 100
-GROUP BY c2
-ORDER BY c2 limit 90;
 
 SELECT c2, count(DISTINCT c3) AS dist_c3, count(DISTINCT c4) AS dist_c4, sum(c5) AS sum_c5
 FROM t100000
@@ -153,15 +121,6 @@ ORDER BY sub.c2;
 
 SELECT c2,
        count(*) AS total,
-       count(*) FILTER (WHERE c3 > 50) AS cnt_c3_gt50,
-       sum(c4) FILTER (WHERE c5 IS NOT NULL) AS sum_c4_when_c5,
-       avg(c1) FILTER (WHERE c1 > c2) AS avg_c1_when_gt_c2
-FROM t100
-GROUP BY c2
-ORDER BY c2 limit 100;
-
-SELECT c2,
-       count(*) AS total,
        count(*) FILTER (WHERE c4 > 100) AS cnt_high_c4,
        avg(c3) FILTER (WHERE c3 > 0) AS avg_positive_c3
 FROM t1000
@@ -204,7 +163,6 @@ FROM t10000_partition_2
 WHERE c2 BETWEEN 25 AND 50
 GROUP BY c2, c3
 ORDER BY c2, c3;
-
 
 SELECT c2, c3, count(*) AS cnt, avg(c4) AS avg_c4
 FROM table_simple

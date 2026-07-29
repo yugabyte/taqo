@@ -130,3 +130,46 @@ create index table_bucketized_only_index_1 on table_bucketized ((yb_hash_code(c2
 create index table_bucketized_only_index_2 on table_bucketized ((yb_hash_code(c2, c4) % 3) asc, c2 asc, c4 asc);
 create index table_bucketized_only_index_3 on table_bucketized ((yb_hash_code(c4, c5) % 7) asc, c4 asc, c5 asc);
 create index table_bucketized_only_index_4 on table_bucketized ((yb_hash_code(c6, v) % 15) asc, c6 asc, v asc);
+
+
+CREATE TABLE table_hm (
+    c1 int,
+    c2 int not null,
+    c3 int,
+    c4 int,
+    c5 int,
+    c6 int,
+    v  text,
+    c7 int,
+    c8 int,
+    ts timestamptz not null default now(),
+    bucketid int generated always as (yb_hash_code(c1, c2) % 64) stored,
+    primary key (bucketid asc, c1 asc, c2 asc)
+) split at values ((8),(16),(24),(32),(40),(48),(56));
+
+CREATE INDEX table_hm_bkt64_c2c3_desc ON table_hm ((yb_hash_code(c2, c3) % 64), c2 desc, c3 desc);
+CREATE INDEX table_hm_bkt64_c4c5_desc ON table_hm ((yb_hash_code(c4, c5) % 64), c4 desc, c5 desc);
+CREATE INDEX table_hm_simple_c2 ON table_hm (c2 asc);
+
+
+CREATE TABLE table_split (
+    c1 int,
+    c2 int not null,
+    c3 int,
+    c4 int,
+    c5 int,
+    c6 int,
+    v  text,
+    c7 int,
+    c8 int,
+    ts timestamptz not null default now(),
+    bucketid int generated always as (yb_hash_code(c1, c2) % 4) stored,
+    primary key (bucketid asc, c1 asc, c2 asc)
+) split at values ((1),(2),(3));
+
+CREATE INDEX table_split_simple_c2 ON table_split (c2 asc);
+CREATE INDEX table_split_include_c2 ON table_split (c2 asc) include (c4);
+CREATE INDEX table_split_ts ON table_split (ts asc);
+CREATE INDEX table_split_bucketized_asc ON table_split ((yb_hash_code(c2, c3) % 4), c2 asc, c3 asc);
+CREATE INDEX table_split_bucketized_desc ON table_split ((yb_hash_code(c2, c3) % 4), c2 desc, c3 desc);
+CREATE INDEX ts_bkt64_c2c3 ON table_split ((yb_hash_code(c2, c3) % 64), c2 asc, c3 asc);
