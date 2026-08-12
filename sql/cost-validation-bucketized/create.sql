@@ -7,22 +7,22 @@ create index t100_simple_index_2 on t100 (c6);
 create index t100_include_index_1 on t100 (c2 asc) include (c4, v);
 
 -- adding bucketized index here
-create index t100_bucketized_1 on t100 ((yb_hash_code(c2, c3) % 3), c2, c3);
-create index t100_bucketized_2 on t100 ((yb_hash_code(c2, c3) % 5), c2, c4, c3); -- have an extra column in index reversed
-create index t100_bucketized_3 on t100 ((yb_hash_code(c2, c3) % 7), c2, c3, c4); -- have an extra column in index
-create index t100_bucketized_4 on t100 ((yb_hash_code(c2, v) % 9), c2, v); -- have v (char) instead
-create index t100_bucketized_5 on t100 ((yb_hash_code(c2, c3) % 11), c2, c3);
-create index t100_bucketized_6 on t100 ((yb_hash_code(c2, c4) % 3), c2, c4); -- make one with c4 to alter c4 type to bigint later
+create index t100_bucketized_1 on t100 ((yb_hash_code(c2, c3) % 3) asc, c2, c3);
+create index t100_bucketized_2 on t100 ((yb_hash_code(c2, c3) % 5) asc, c2, c4, c3); -- have an extra column in index reversed
+create index t100_bucketized_3 on t100 ((yb_hash_code(c2, c3) % 7) asc, c2, c3, c4); -- have an extra column in index
+create index t100_bucketized_4 on t100 ((yb_hash_code(c2, v) % 9) asc, c2, v); -- have v (char) instead
+create index t100_bucketized_5 on t100 ((yb_hash_code(c2, c3) % 11) asc, c2, c3);
+create index t100_bucketized_6 on t100 ((yb_hash_code(c2, c4) % 3) asc, c2, c4); -- make one with c4 to alter c4 type to bigint later
 
 -- some table alters to test
 alter table t100 alter column c4 type bigint;
 
 -- creating some complex bucketized index
-CREATE UNIQUE INDEX t100_complex_index_1 ON t100 ((yb_hash_code(c2, c3) % 3), c2, c3, coalesce(c4, 0), c5, coalesce(c6, 0)) INCLUDE (v) WHERE c2 > 10;
-CREATE INDEX t100_complex_index_2 ON t100 (bucketid, c1, c2, coalesce(c3, 0), c4) INCLUDE (c5, c6, v) WHERE c1 IS NOT NULL;
-CREATE INDEX t100_complex_index_3 ON t100 ((yb_hash_code(lower(v::text), c2) % 3), lower(v::text), c2, c3) INCLUDE (c4, c5) WHERE v IS NOT NULL;
-CREATE UNIQUE INDEX t100_complex_index_4 ON t100 ((yb_hash_code(c3, c2) % 3), bucketid, c3, c2, coalesce(c4, 0), c5) NULLS NOT DISTINCT WHERE c3 IS NOT NULL;
-CREATE INDEX t100_complex_index_5 ON t100 ((yb_hash_code(c2, lower(v::text)) % 3), c2, v) INCLUDE (bucketid, c3, c4, c5, c6) WHERE v IS NOT NULL;
+CREATE UNIQUE INDEX t100_complex_index_1 ON t100 ((yb_hash_code(c2, c3) % 3) asc, c2, c3, coalesce(c4, 0), c5, coalesce(c6, 0)) INCLUDE (v) WHERE c2 > 10;
+CREATE INDEX t100_complex_index_2 ON t100 (bucketid asc, c1, c2, coalesce(c3, 0), c4) INCLUDE (c5, c6, v) WHERE c1 IS NOT NULL;
+CREATE INDEX t100_complex_index_3 ON t100 ((yb_hash_code(lower(v::text), c2) % 3) asc, lower(v::text), c2, c3) INCLUDE (c4, c5) WHERE v IS NOT NULL;
+CREATE UNIQUE INDEX t100_complex_index_4 ON t100 ((yb_hash_code(c3, c2) % 3) asc, bucketid, c3, c2, coalesce(c4, 0), c5) NULLS NOT DISTINCT WHERE c3 IS NOT NULL;
+CREATE INDEX t100_complex_index_5 ON t100 ((yb_hash_code(c2, lower(v::text)) % 3) asc, c2, v) INCLUDE (bucketid, c3, c4, c5, c6) WHERE v IS NOT NULL;
 
 
 
@@ -31,8 +31,8 @@ CREATE INDEX t100_complex_index_5 ON t100 ((yb_hash_code(c2, lower(v::text)) % 3
 -- for each table lets try to have different bucketids (and for one table, just bucketid and simpler indexes - to check performance in normal conditions)
 -- simple table case below
 create table t1000 (c1 int, c2 int not null, c3 int, c4 int, c5 int, c6 int, v char(1024),  bucketid int generated always as ( yb_hash_code(c2, c4) % 5 ) STORED, primary key (bucketid asc, c2, c4));
-create index t1000_bucketized_1 on t1000 ((yb_hash_code(c2, c3) % 3), c2, c3);
-create index t1000_bucketized_2 on t1000 ((yb_hash_code(c2, c4) % 5), c2, c4);
+create index t1000_bucketized_1 on t1000 ((yb_hash_code(c2, c3) % 3) asc, c2, c3);
+create index t1000_bucketized_2 on t1000 ((yb_hash_code(c2, c4) % 5) asc, c2, c4);
 
 
 
@@ -52,15 +52,15 @@ create index t10000_simple_index_2 on t10000 (c6);
 create index t10000_include_index_1 on t10000 (c2 asc) include (c4, v);
 
 -- adding bucketized index here
-create index t10000_bucketized_1 on t10000 ((yb_hash_code(c2, c3) % 3), c2, c3);
-create index t10000_bucketized_4 on t10000 ((yb_hash_code(c2, v) % 3), c2, v); -- have v (char) instead
+create index t10000_bucketized_1 on t10000 ((yb_hash_code(c2, c3) % 3) asc, c2, c3);
+create index t10000_bucketized_4 on t10000 ((yb_hash_code(c2, v) % 3) asc, c2, v); -- have v (char) instead
 
 -- adding bucketized index on the partitions directly
-create index t10000_bucketized_partition_1 on t10000_partition_1 ((yb_hash_code(c2, c4) % 3), c2, c4);
-create index t10000_bucketized_partition_2 on t10000_partition_2 ((yb_hash_code(c2, c3) % 3), c2, c3);
-create index t10000_bucketized_partition_3 on t10000_partition_3 ((yb_hash_code(c2, c1) % 7), c1, c2);
-create index t10000_bucketized_partition_4 on t10000_partition_4 ((yb_hash_code(c1, v) % 11), c1, v);
-create index t10000_bucketized_partition_def on t10000_partition_def ((yb_hash_code(c3, c4) % 3), c2, c4);
+create index t10000_bucketized_partition_1 on t10000_partition_1 ((yb_hash_code(c2, c4) % 3) asc, c2, c4);
+create index t10000_bucketized_partition_2 on t10000_partition_2 ((yb_hash_code(c2, c3) % 3) asc, c2, c3);
+create index t10000_bucketized_partition_3 on t10000_partition_3 ((yb_hash_code(c2, c1) % 7) asc, c1, c2);
+create index t10000_bucketized_partition_4 on t10000_partition_4 ((yb_hash_code(c1, v) % 11) asc, c1, v);
+create index t10000_bucketized_partition_def on t10000_partition_def ((yb_hash_code(c3, c4) % 3) asc, c2, c4);
 
 
 
@@ -74,9 +74,9 @@ create index t100000_simple_index_3 on t100000 (c4 asc);
 create index t100000_simple_index_4 on t100000 (c6 asc);
 create index t100000_simple_index_5 on t100000 (c2 asc) include (c4);
 create index t100000_simple_index_6 on t100000 (c2 asc) include (c4, v);
-create index t100000_bucketized_1 on t100000 ((yb_hash_code(c2, c3) % 3), c2, c3);
-create index t100000_bucketized_2 on t100000 ((yb_hash_code(c2, c4) % 3), c2, c4);
-create index t100000_bucketized_3 on t100000 ((yb_hash_code(c1, c2) % 7), c1, c2);
+create index t100000_bucketized_1 on t100000 ((yb_hash_code(c2, c3) % 3) asc, c2, c3);
+create index t100000_bucketized_2 on t100000 ((yb_hash_code(c2, c4) % 3) asc, c2, c4);
+create index t100000_bucketized_3 on t100000 ((yb_hash_code(c1, c2) % 7) asc, c1, c2);
 
 
 
@@ -90,11 +90,11 @@ create index t100000w_simple_index_3 on t100000w (c4 asc);
 create index t100000w_simple_index_4 on t100000w (c6 asc);
 create index t100000w_simple_index_5 on t100000w (c2 asc) include (c4);
 create index t100000w_simple_index_6 on t100000w (c2 asc) include (c4, v);
-create index t100000w_bucketized_1 on t100000w ((yb_hash_code(c2, c3) % 3), c2, c3);
-create index t100000w_bucketized_2 on t100000w ((yb_hash_code(c2, c4) % 5), c2, c4);
-create index t100000w_bucketized_3 on t100000w ((yb_hash_code(c1, c2) % 7), c1, c2);
-create index t100000w_bucketized_4 on t100000w ((yb_hash_code(bucketid, v) % 3), bucketid, v); -- using bucketid here
-create index t100000w_bucketized_5 on t100000w ((yb_hash_code(c2, v) % 3), c2, v);
+create index t100000w_bucketized_1 on t100000w ((yb_hash_code(c2, c3) % 3) asc, c2, c3);
+create index t100000w_bucketized_2 on t100000w ((yb_hash_code(c2, c4) % 5) asc, c2, c4);
+create index t100000w_bucketized_3 on t100000w ((yb_hash_code(c1, c2) % 7) asc, c1, c2);
+create index t100000w_bucketized_4 on t100000w ((yb_hash_code(bucketid, v) % 3) asc, bucketid, v); -- using bucketid here
+create index t100000w_bucketized_5 on t100000w ((yb_hash_code(c2, v) % 3) asc, c2, v);
 
 
 
@@ -109,11 +109,11 @@ create index t1000000m_simple_index_3_c5 on t1000000m (c5 asc);
 create index t1000000m_simple_index_4_c6 on t1000000m (c6 asc);
 create index t1000000m_simple_index_5_c3c4c5 on t1000000m (c3 asc, c4 asc, c5 asc);
 create index t1000000m_simple_index_6_c5c4c3 on t1000000m (c5 asc, c4 asc, c3 asc);
-create index t1000000m_bucketized_1 on t1000000m ((yb_hash_code(c2, c3) % 3), c2, c3);
-create index t1000000m_bucketized_2 on t1000000m ((yb_hash_code(c2, c4) % 3), c2, c4);
-create index t1000000m_bucketized_3 on t1000000m ((yb_hash_code(c1, c2) % 5), c1, c2);
-create index t1000000m_bucketized_4 on t1000000m ((yb_hash_code(bucketid, c6) % 3), bucketid, c6); -- using bucketid here
-create index t1000000m_bucketized_5 on t1000000m ((yb_hash_code(c2, c5) % 3), c2, c5);
+create index t1000000m_bucketized_1 on t1000000m ((yb_hash_code(c2, c3) % 3) asc, c2, c3);
+create index t1000000m_bucketized_2 on t1000000m ((yb_hash_code(c2, c4) % 3) asc, c2, c4);
+create index t1000000m_bucketized_3 on t1000000m ((yb_hash_code(c1, c2) % 5) asc, c1, c2);
+create index t1000000m_bucketized_4 on t1000000m ((yb_hash_code(bucketid, c6) % 3) asc, bucketid, c6); -- using bucketid here
+create index t1000000m_bucketized_5 on t1000000m ((yb_hash_code(c2, c5) % 3) asc, c2, c5);
 
 
 ------------------- custom tables here for checking behavior with and without ANY bucketized indexes -------------------
@@ -147,8 +147,8 @@ CREATE TABLE table_hm (
     primary key (bucketid asc, c1 asc, c2 asc)
 ) split at values ((8),(16),(24),(32),(40),(48),(56));
 
-CREATE INDEX table_hm_bkt64_c2c3_desc ON table_hm ((yb_hash_code(c2, c3) % 64), c2 desc, c3 desc);
-CREATE INDEX table_hm_bkt64_c4c5_desc ON table_hm ((yb_hash_code(c4, c5) % 64), c4 desc, c5 desc);
+CREATE INDEX table_hm_bkt64_c2c3_desc ON table_hm ((yb_hash_code(c2, c3) % 64) asc, c2 desc, c3 desc);
+CREATE INDEX table_hm_bkt64_c4c5_desc ON table_hm ((yb_hash_code(c4, c5) % 64) asc, c4 desc, c5 desc);
 CREATE INDEX table_hm_simple_c2 ON table_hm (c2 asc);
 
 
@@ -170,6 +170,6 @@ CREATE TABLE table_split (
 CREATE INDEX table_split_simple_c2 ON table_split (c2 asc);
 CREATE INDEX table_split_include_c2 ON table_split (c2 asc) include (c4);
 CREATE INDEX table_split_ts ON table_split (ts asc);
-CREATE INDEX table_split_bucketized_asc ON table_split ((yb_hash_code(c2, c3) % 4), c2 asc, c3 asc);
-CREATE INDEX table_split_bucketized_desc ON table_split ((yb_hash_code(c2, c3) % 4), c2 desc, c3 desc);
-CREATE INDEX ts_bkt64_c2c3 ON table_split ((yb_hash_code(c2, c3) % 64), c2 asc, c3 asc);
+CREATE INDEX table_split_bucketized_asc ON table_split ((yb_hash_code(c2, c3) % 4) asc, c2 asc, c3 asc);
+CREATE INDEX table_split_bucketized_desc ON table_split ((yb_hash_code(c2, c3) % 4) asc, c2 desc, c3 desc);
+CREATE INDEX ts_bkt64_c2c3 ON table_split ((yb_hash_code(c2, c3) % 64) asc, c2 asc, c3 asc);
