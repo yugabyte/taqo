@@ -1,0 +1,17 @@
+drop table if exists mb2 cascade;
+drop table if exists mb4 cascade;
+drop table if exists mb16 cascade;
+drop table if exists mb64 cascade;
+drop table if exists mplain cascade;
+drop table if exists mn16 cascade;
+drop table if exists mw16 cascade;
+drop table if exists ms16 cascade;
+drop table if exists sel cascade;
+drop table if exists sa cascade;
+drop table if exists pt cascade;
+drop table if exists dj cascade;
+drop table if exists de16 cascade;
+drop table if exists de2c cascade;
+drop table if exists dex cascade;
+drop table if exists riv cascade;
+drop table if exists rivb cascade;
