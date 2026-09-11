@@ -18,6 +18,10 @@ from objects import Query, FieldInTableHelper
 PARAMETER_VARIABLE = r"[^'](\%\((.*?)\))"
 WITH_ORDINALITY = r"[Ww][Ii][Tt][Hh]\s*[Oo][Rr][Dd][Ii][Nn][Aa][Ll][Ii][Tt][yY]\s*[Aa][Ss]\s*.*(.*)"
 
+# Batch size for streaming result rows from the cursor without loading the
+# entire result set into memory at once.
+FETCH_BATCH_SIZE = 1000
+
 
 def current_milli_time():
     return (time.time_ns() // 1_000) / 1_000
@@ -37,28 +41,63 @@ def remove_with_ordinality(sql_str):
 
 
 def get_result_for_consistency_check(cur, is_dml: bool, has_order_by: bool, has_limit: bool):
+    # Returns (cardinality, result_hash). The hash is built incrementally and,
+    # when the row order is deterministic, without materializing the whole
+    # result set - so a large join result does not have to be held in memory.
+    # The hashed byte stream is identical to md5(''.join(str(cell) ...)) that
+    # earlier versions produced, so hashes stay comparable across runs.
     if is_dml:
-        return cur.rowcount, f"{cur.rowcount} updates"
-    
-    # if there is a limit without order by we can't validate results
-    str_result = []
-    cardinality = 0
-    if has_limit and not has_order_by:
-        str_result = ["LIMIT_WITHOUT_ORDER_BY"]
-    else:
-        result = cur.fetchall()
+        return cur.rowcount, get_md5(f"{cur.rowcount} updates")
 
-        for row in result:
+    # if there is a limit without order by we can't validate results
+    if has_limit and not has_order_by:
+        return 0, get_md5("LIMIT_WITHOUT_ORDER_BY")
+
+    cardinality = 0
+    if has_order_by:
+        # deterministic order - stream rows in batches and hash cell values in
+        # row-major order without buffering the full result set
+        md5 = hashlib.md5()
+        while rows := cur.fetchmany(FETCH_BATCH_SIZE):
+            for row in rows:
+                cardinality += 1
+                for column_value in row:
+                    md5.update(str(column_value).encode('utf-8'))
+        return cardinality, md5.hexdigest()
+
+    # no order by - cell values must be sorted for a stable hash, which requires
+    # buffering them; still hash incrementally to avoid the extra full-size
+    # join and encode copies
+    str_result = []
+    while rows := cur.fetchmany(FETCH_BATCH_SIZE):
+        for row in rows:
             cardinality += 1
             for column_value in row:
-                str_result.append(f"{str(column_value)}")
+                str_result.append(str(column_value))
 
-        if not has_order_by:
-            str_result.sort()
+    str_result.sort()
+    md5 = hashlib.md5()
+    for value in str_result:
+        md5.update(value.encode('utf-8'))
+    return cardinality, md5.hexdigest()
 
-    return cardinality, ''.join(str_result)
 
-def get_result(cur, is_dml: bool):
+def drain_result(cur, is_dml: bool):
+    # Consume all rows from the cursor without materializing them, returning
+    # only the cardinality. Used for timing/warmup iterations where the row
+    # values are not needed, so a large result set is not held in memory. Rows
+    # are still fully read so the timing includes data transfer.
+    if is_dml:
+        return cur.rowcount
+
+    cardinality = 0
+    while rows := cur.fetchmany(FETCH_BATCH_SIZE):
+        cardinality += len(rows)
+
+    return cardinality
+
+
+def get_result(cur, is_dml: bool, separator: str = ""):
     if is_dml:
         return cur.rowcount, f"{cur.rowcount} updates"
 
@@ -71,7 +110,7 @@ def get_result(cur, is_dml: bool):
         for column_value in row:
             str_result.append(f"{str(column_value)}")
 
-    return cardinality, ''.join(str_result)
+    return cardinality, separator.join(str_result)
 
 
 def _filter_outliers(execution_times, threshold_pct=100, min_median_ms=500):
@@ -124,6 +163,7 @@ def calculate_avg_execution_time(cur,
     is_dml = query_is_dml(query_str_lower)
 
     execution_times = []
+    execution_plans = []
     actual_evaluations = 0
 
     # run at least one iteration
@@ -146,16 +186,14 @@ def calculate_avg_execution_time(cur,
                 # using first iteration as a result collecting step
                 # even if EXPLAIN ANALYZE is explain query
                 query.parameters = evaluate_sql(cur, query.get_query())
-                cardinality, result = get_result_for_consistency_check(cur, is_dml, has_order_by, has_limit)
-
-                query.result_cardinality = cardinality
-                query.result_hash = get_md5(result)
+                query.result_cardinality, query.result_hash = \
+                    get_result_for_consistency_check(cur, is_dml, has_order_by, has_limit)
             else:
                 if iteration < num_warmup:
                     query.parameters = evaluate_sql(cur, query_str)
-                    _, result = get_result(cur, is_dml)
+                    drain_result(cur, is_dml)
                 else:
-                    if not execution_plan_collected:
+                    if not with_analyze and not execution_plan_collected:
                         collect_execution_plan(cur, connection, query, sut_database)
                         execution_plan_collected = True
 
@@ -166,11 +204,14 @@ def calculate_avg_execution_time(cur,
 
                     evaluate_sql(cur, query_str)
                     config.logger.debug("SQL >> Getting results")
-                    _, result = get_result(cur, is_dml)
 
                     if with_analyze:
-                        execution_times.append(extract_execution_time_from_analyze(result))
+                        _, result = get_result(cur, is_dml, separator="\n")
+                        execution_time = extract_execution_time_from_analyze(result)
+                        execution_times.append(execution_time)
+                        execution_plans.append((execution_time, result))
                     else:
+                        drain_result(cur, is_dml)
                         execution_times.append(current_milli_time() - start_time)
         except psycopg2.errors.QueryCanceled as qc:
             # failed by timeout - it's ok just skip optimization
@@ -219,6 +260,7 @@ def calculate_avg_execution_time(cur,
             f"{execution_times}, running additional iteration(s)")
 
         execution_times = clean_times
+        execution_plans = [(t, plan) for t, plan in execution_plans if t in clean_times]
         runs_needed = min(len(outliers), max_additional_runs - additional_runs)
 
         rerun_failed = False
@@ -229,11 +271,13 @@ def calculate_avg_execution_time(cur,
 
                 start_time = current_milli_time()
                 evaluate_sql(cur, query_str)
-                _, result = get_result(cur, is_dml)
 
                 if with_analyze:
+                    _, result = get_result(cur, is_dml, separator="\n")
                     new_time = extract_execution_time_from_analyze(result)
+                    execution_plans.append((new_time, result))
                 else:
+                    drain_result(cur, is_dml)
                     new_time = current_milli_time() - start_time
 
                 execution_times.append(new_time)
@@ -273,6 +317,13 @@ def calculate_avg_execution_time(cur,
 
     query.execution_times = all_execution_times
     query.execution_time_ms = sum(execution_times) / len(execution_times)
+
+    if with_analyze:
+        # Keep a real measured plan representative of the filtered average.
+        retained_plans = [(t, plan) for t, plan in execution_plans if t in execution_times]
+        _, representative_plan = min(
+            retained_plans, key=lambda sample: abs(sample[0] - query.execution_time_ms))
+        query.execution_plan = sut_database.get_execution_plan(representative_plan)
 
     if config.yugabyte_collect_stats:
         sut_database.collect_query_statistics(cur, query, query_str)
@@ -325,7 +376,7 @@ def query_is_dml(query_str_lower):
 
 def extract_execution_time_from_analyze(result):
     extracted = -1
-    matches = re.findall(r"(?<!\s)Execution\sTime:\s(\d+\.\d+)\sms", result, re.MULTILINE)
+    matches = re.findall(r"\bExecution\sTime:\s(\d+\.\d+)\sms", result, re.MULTILINE)
     if matches:
         return float(matches[0])
 
