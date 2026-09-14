@@ -146,7 +146,7 @@ class CollectAction:
                     if self.config.plans_only:
                         original_query.execution_time_ms = default_execution_plan.get_estimated_cost()
                     else:
-                        query_str = original_query.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
+                        query_str = original_query.get_explain() \
                             if self.config.server_side_execution else None
                         calculate_avg_execution_time(cur, original_query, self.sut_database,
                                                      query_str=query_str,
@@ -221,7 +221,7 @@ class CollectAction:
                     self.config.baseline_results.find_query_by_hash(original_query.query_hash):
                 # get the best optimization from baseline run
                 best_optimization = baseline_result.get_best_optimization(self.config)
-                query_str = best_optimization.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
+                query_str = best_optimization.get_explain() \
                     if self.config.server_side_execution else None
                 calculate_avg_execution_time(cur,
                                              best_optimization,
@@ -272,7 +272,7 @@ class CollectAction:
             exec_plan_md5 = get_md5(optimization.cost_off_explain.get_clean_plan())
             not_unique_plan = exec_plan_md5 in execution_plans_checked
             execution_plans_checked.add(exec_plan_md5)
-            query_str = optimization.get_explain(EXPLAIN, options=[ExplainFlags.ANALYZE]) \
+            query_str = optimization.get_explain() \
                 if self.config.server_side_execution else None
 
             if not_unique_plan:

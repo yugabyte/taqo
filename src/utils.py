@@ -376,7 +376,9 @@ def query_is_dml(query_str_lower):
 
 def extract_execution_time_from_analyze(result):
     extracted = -1
-    matches = re.findall(r"\bExecution\sTime:\s(\d+\.\d+)\sms", result, re.MULTILINE)
+    # anchor to line start so the top-level total is matched, not the
+    # "Storage ... Execution Time" lines that DIST plans add
+    matches = re.findall(r"^Execution\sTime:\s(\d+\.\d+)\sms", result, re.MULTILINE)
     if matches:
         return float(matches[0])
 
