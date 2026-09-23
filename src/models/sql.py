@@ -154,11 +154,7 @@ class SQLModel(QTFModel):
     CATALOG_QUERY_ATTEMPTS = 3
 
     def run_catalog_query(self, cur, sql):
-        """Run a read-only catalog query; retry serialization failures and raise any other error.
-
-        evaluate_sql swallows OperationalError, which left callers calling fetchall() on a failed
-        cursor ("no results to fetch") and hid the real error.
-        """
+        """Run a read-only catalog query; retry serialization failures and raise any other error."""
         for attempt in range(1, self.CATALOG_QUERY_ATTEMPTS + 1):
             try:
                 cur.execute(sql)
