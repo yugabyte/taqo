@@ -14,7 +14,7 @@ from config import DDLStep
 from objects import QueryTips, Field
 from db.postgres import PostgresQuery, Table
 from models.abstract import QTFModel
-from utils import get_alias_table_names, evaluate_sql, get_md5, get_model_path, find_order_by_in_query
+from utils import get_alias_table_names, evaluate_sql, get_md5, get_model_path, find_order_by_in_query, _safe_rollback
 
 
 class SQLModel(QTFModel):
@@ -151,13 +151,27 @@ class SQLModel(QTFModel):
 
         return True
 
+    CATALOG_QUERY_ATTEMPTS = 3
+
+    def run_catalog_query(self, cur, sql):
+        """Run a read-only catalog query; retry serialization failures and raise any other error."""
+        for attempt in range(1, self.CATALOG_QUERY_ATTEMPTS + 1):
+            try:
+                cur.execute(sql)
+                return cur.fetchall()
+            except psycopg2.errors.SerializationFailure as error:
+                _safe_rollback(cur.connection)
+                if attempt == self.CATALOG_QUERY_ATTEMPTS:
+                    raise
+                self.logger.warning(f"Catalog query hit a serialization failure, retry {attempt}: {error}")
+
     def load_tables_from_public(self, cur):
         catalog_schema = ", 'pg_catalog'" if self.config.load_catalog_tables else ""
 
         # we are assuming no table name conflicts between public and pg_catalog schemas for now.
         # column_width (defined width) is -1 for text, array type, etc. types with unbound length)
         self.logger.info("Loading tables, columns and indexes...")
-        evaluate_sql(
+        catalog_rows = self.run_catalog_query(
             cur,
             f"""
             select
@@ -198,7 +212,7 @@ class SQLModel(QTFModel):
         created_tables = []
         non_catalog_tables = []
         table = Table()
-        for tname, cname, cpos, clen, inames, nname in cur.fetchall():
+        for tname, cname, cpos, clen, inames, nname in catalog_rows:
             if tname != table.name:
                 table = Table(name=tname, fields=[], rows=0, size=0)
                 created_tables.append(table)
@@ -222,7 +236,7 @@ class SQLModel(QTFModel):
                 raise AssertionError(f"Found multiple tables with the same name: {t.name}")
             tmap[t.name] = t
 
-        evaluate_sql(
+        catalog_rows = self.run_catalog_query(
             cur,
             f"""
             select
@@ -239,11 +253,11 @@ class SQLModel(QTFModel):
                  """
         )
 
-        for tname, rows in cur.fetchall():
+        for tname, rows in catalog_rows:
             tmap[tname].rows = rows
 
         self.logger.info("Loading column statistics...")
-        evaluate_sql(
+        catalog_rows = self.run_catalog_query(
             cur,
             f"""
             select
@@ -265,7 +279,7 @@ class SQLModel(QTFModel):
                  """
         )
 
-        for tname, cname, cpos, cwidth in cur.fetchall():
+        for tname, cname, cpos, cwidth in catalog_rows:
             if cwidth:
                 field = tmap[tname].fields[cpos - 1]
                 if field.name != cname or field.position != cpos:
