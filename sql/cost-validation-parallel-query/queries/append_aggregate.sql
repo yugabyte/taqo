@@ -1,4 +1,4 @@
-set statement_timeout="240s";
+set statement_timeout="20s";
 
 SELECT id,
        grp,
