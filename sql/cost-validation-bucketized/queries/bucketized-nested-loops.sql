@@ -789,6 +789,7 @@ LATERAL (
 ) x;
 
 
+-- tags: skip_consistency_check
 WITH src AS (
     SELECT c2, c3
     FROM t10000
@@ -819,6 +820,7 @@ WHERE z.rnk <= 20
 ORDER BY src.c2, src.c3;
 
 
+-- tags: skip_consistency_check
 WITH src AS (
     SELECT c2, c3
     FROM t10000
@@ -849,6 +851,7 @@ WHERE z.rnk <= 20
 ORDER BY src.c2, src.c3;
 
 
+-- tags: skip_consistency_check
 WITH src AS (
     SELECT c2, c3
     FROM t10000

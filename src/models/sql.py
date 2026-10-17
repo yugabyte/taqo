@@ -352,6 +352,9 @@ class SQLModel(QTFModel):
                             query_debug_queries.append(cleaned)
                         else:
                             current_tips = query_tips.copy()
+                            # "-- tags:" right above a statement applies to that statement only
+                            statement_tags = self.get_query_hint_tips(file_query).tags
+                            current_tips.tags = list(dict.fromkeys(query_tips.tags + statement_tags))
                             current_debug_queries = query_debug_queries.copy()
                             current_tips.debug_queries = current_debug_queries
 

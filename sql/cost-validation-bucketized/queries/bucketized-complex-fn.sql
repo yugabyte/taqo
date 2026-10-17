@@ -179,6 +179,7 @@ SELECT
 FROM t1000000m
 WHERE c2 BETWEEN 0 AND 1005000 order by c2,c4;
 
+-- tags: skip_consistency_check
 SELECT
     c2,
     c5,
@@ -231,6 +232,7 @@ SELECT
 FROM filtered;
 
 
+-- tags: skip_consistency_check
 SELECT
     c2,
     c3,

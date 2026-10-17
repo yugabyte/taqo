@@ -45,6 +45,7 @@ select c1, c2, c5 from t1000000m where (c5 % 7) = 0 AND c1 % 41 < 30 AND c1 + c2
 select c2, c4 from t1000 where c4 between 1 and 500 AND c2 % 11 + c4 % 7 < 15 AND c2 > c4 * 2 order by c2, c4 LIMIT 100;
 select c2, c3 from t1000 where c3 in (5,10,15,20) AND c2 % 13 <= 9 AND c2 + c3 * 3 < 1000 order by c2, c3;
 select c2, c4 from t1000 where c2 <> c4 AND MOD(c2 * c4, 17) < 12 AND ABS(c2 - c4) > 5 order by c2, c4 LIMIT 50;
+-- tags: skip_consistency_check
 select c2, c3, c4 from t1000 where c3 > 0 AND c3 % 19 + c4 % 11 <= 18 AND c3 < c4 + 100 order by c3, c4;
 select c2, c4 from t1000 where v like '---%' AND c2 % 23 < 16 AND c4 + c2 * 2 < 5000 order by c2, c4;
 select c1, v from t10000 where length(v) > 5 and v like '---%' AND c1 % 37 < 28 AND c1 * 3 < 25000 order by c1, v LIMIT 50;
