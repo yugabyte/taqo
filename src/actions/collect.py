@@ -1,3 +1,4 @@
+import re
 import subprocess
 
 import psycopg2
@@ -9,6 +10,8 @@ from models.factory import get_test_model
 from objects import EXPLAIN, ExplainFlags
 from utils import evaluate_sql, calculate_avg_execution_time, get_md5, allowed_diff, \
     extract_execution_time_from_analyze, current_milli_time
+
+GENERATED_HINTS = re.compile(r"^\s*Generated hints:\s*(.+?)\s*$", re.MULTILINE)
 
 
 class CollectAction:
@@ -86,6 +89,8 @@ class CollectAction:
 
             model_queries = teardown_queries + create_queries + analyze_queries + import_queries
             queries = model.get_queries(created_tables)
+            if self.config.pinned_hints_results:
+                self.pin_generated_hints(queries)
 
             if DDLStep.COMPACT in self.config.ddls:
                 self.sut_database.run_compaction(tables=non_catalog_tables)
@@ -103,6 +108,31 @@ class CollectAction:
                                                        queries)
 
         return ddl_execution_time, model_execution_time, model_queries, queries
+
+    def pin_generated_hints(self, queries):
+        """Prepend the "Generated hints" of the pinned run to each query.
+
+        A query keeps its hash, so the result maps to the pinned run query.
+        Queries without generated hints in the pinned run stay unhinted.
+        """
+        pinned = 0
+        for query in queries:
+            pinned_query = self.config.pinned_hints_results.find_query_by_hash(query.query_hash)
+            plan = pinned_query.execution_plan if pinned_query else None
+            match = GENERATED_HINTS.search(plan.full_str) if plan and plan.full_str else None
+            if not match or match.group(1) == "none":
+                self.logger.warning(f"No generated hints to pin for query {query.query_hash}")
+                continue
+
+            hints = match.group(1)
+            query.explain_hints = hints
+            query.query = f"/*+ {hints} */ {query.query}"
+            # pg_hint_plan reads only the first hint comment
+            if query.optimizer_tips.debug_hints:
+                query.optimizer_tips.debug_hints = f"{query.optimizer_tips.debug_hints} {hints}"
+            pinned += 1
+
+        self.logger.info(f"Pinned generated hints for {pinned}/{len(queries)} queries")
 
     def _reconnect(self, conn):
         """Reconnect to the database if the connection is closed."""
