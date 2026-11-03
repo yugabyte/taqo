@@ -11,7 +11,8 @@ from objects import EXPLAIN, ExplainFlags
 from utils import evaluate_sql, calculate_avg_execution_time, get_md5, allowed_diff, \
     extract_execution_time_from_analyze, current_milli_time
 
-GENERATED_HINTS = re.compile(r"^\s*Generated hints:\s*(.+?)\s*$", re.MULTILINE)
+# EXPLAIN prints the hints wrapped in their own /*+ ... */ comment; capture only the hint text
+GENERATED_HINTS = re.compile(r"^\s*Generated hints:\s*(?:/\*\+\s*)?(.+?)(?:\s*\*/)?\s*$", re.MULTILINE)
 
 
 class CollectAction:
