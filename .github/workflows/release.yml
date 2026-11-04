@@ -64,6 +64,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version }}
+          target_commitish: ${{ github.sha }}
           name: TAQO ${{ steps.ver.outputs.version }}
           draft: false
           prerelease: ${{ contains(inputs.version, 'rc') || contains(inputs.version, 'beta') }}
