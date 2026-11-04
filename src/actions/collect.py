@@ -111,9 +111,9 @@ class CollectAction:
         return ddl_execution_time, model_execution_time, model_queries, queries
 
     def pin_generated_hints(self, queries):
-        """Prepend the "Generated hints" of the pinned run to each query.
+        """Pin each query to the "Generated hints" of the same query in the pinned run.
 
-        A query keeps its hash, so the result maps to the pinned run query.
+        Optimizations keep only their own hints.
         Queries without generated hints in the pinned run stay unhinted.
         """
         pinned = 0
@@ -125,15 +125,13 @@ class CollectAction:
                 self.logger.warning(f"No generated hints to pin for query {query.query_hash}")
                 continue
 
-            hints = match.group(1)
-            query.explain_hints = hints
-            query.query = f"/*+ {hints} */ {query.query}"
-            # pg_hint_plan reads only the first hint comment
-            if query.optimizer_tips.debug_hints:
-                query.optimizer_tips.debug_hints = f"{query.optimizer_tips.debug_hints} {hints}"
+            query.pinned_hints = match.group(1)
             pinned += 1
 
         self.logger.info(f"Pinned generated hints for {pinned}/{len(queries)} queries")
+        if not pinned:
+            raise ValueError("No generated hints found in the pinned hints results; "
+                             "collect them with HINTS ON in explain-clause and without --plans-only")
 
     def _reconnect(self, conn):
         """Reconnect to the database if the connection is closed."""

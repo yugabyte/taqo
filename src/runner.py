@@ -77,9 +77,9 @@ if __name__ == "__main__":
                         help='Link to baseline run results (JSON)')
     parser.add_argument('--pinned-hints',
                         default="",
-                        help='Run results (JSON) collected with "EXPLAIN (..., HINTS ON)". '
-                             'Each query runs with the "Generated hints" of the same query '
-                             'from this file prepended as a pg_hint_plan comment')
+                        help='Run results (JSON) collected with "EXPLAIN (..., HINTS ON)" '
+                             'and without --plans-only. Each query runs with the "Generated hints" '
+                             'of the same query from this file as a pg_hint_plan comment')
     parser.add_argument('--config',
                         default="config/default.conf",
                         help='Configuration file path')
