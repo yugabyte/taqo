@@ -299,7 +299,7 @@ class Leading:
                         if field.is_index
                     }
 
-            table_scan_hints.append(list(tables_and_idxs))
+            table_scan_hints.append(sorted(tables_and_idxs))
 
         return table_scan_hints
 
