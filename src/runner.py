@@ -75,6 +75,11 @@ if __name__ == "__main__":
     parser.add_argument('--baseline',
                         default="",
                         help='Link to baseline run results (JSON)')
+    parser.add_argument('--pinned-hints',
+                        default="",
+                        help='Run results (JSON) collected with "EXPLAIN (..., HINTS ON)" '
+                             'and without --plans-only. Each query runs with the "Generated hints" '
+                             'of the same query from this file as a pg_hint_plan comment')
     parser.add_argument('--config',
                         default="config/default.conf",
                         help='Configuration file path')
@@ -336,6 +341,7 @@ if __name__ == "__main__":
         load_catalog_tables=configuration.get("load-catalog-tables", False),
         baseline_path=args.baseline,
         baseline_results=loader.get_queries_from_previous_result(args.baseline) if args.baseline else None,
+        pinned_hints_results=loader.get_queries_from_previous_result(args.pinned_hints) if args.pinned_hints else None,
         output=args.output,
         ddls=ddls,
         remote_data_path=args.remote_data_path,

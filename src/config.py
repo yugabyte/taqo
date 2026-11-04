@@ -87,6 +87,7 @@ class Config(metaclass=Singleton):
     model: str = None
     baseline_path: str = None
     baseline_results: any = None
+    pinned_hints_results: any = None
     all_index_check: bool = None
     bitmap_enabled: bool = None
     load_catalog_tables: bool = None
@@ -119,7 +120,7 @@ class Config(metaclass=Singleton):
     clear: bool = False
 
     def __str__(self):
-        skipped_fields = ['logger', 'database', 'baseline_results', 'has_failures', 'exit_on_fail']
+        skipped_fields = ['logger', 'database', 'baseline_results', 'pinned_hints_results', 'has_failures', 'exit_on_fail']
 
         self_dict = copy(vars(self))
         for field in skipped_fields:

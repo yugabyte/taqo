@@ -308,12 +308,21 @@ class Leading:
 class PostgresQuery(Query):
     execution_plan: 'PostgresExecutionPlan' = None
     optimizations: List['PostgresOptimization'] = None
+    pinned_hints: str = ""
 
     def get_debug_hints(self):
-        return f"/*+ {self.optimizer_tips.debug_hints} */ " if self.optimizer_tips.debug_hints else ""
+        hints = " ".join(filter(None, [self.optimizer_tips.debug_hints, self.pinned_hints]))
+        return f"/*+ {hints} */ " if hints else ""
 
     def get_query(self):
         return f"{self.get_debug_hints()}{self.query}"
+
+    def get_explain(self, explain_clause: str = None, options: List[ExplainFlags] = None):
+        explain = super().get_explain(explain_clause, options)
+        if not self.pinned_hints:
+            return explain
+
+        return f"{explain.removesuffix(self.query)}/*+ {self.pinned_hints} */ {self.query}"
 
     def compare_plans(self, query: Type['Query']):
         if (self.cost_off_explain and self.cost_off_explain.is_present() and
