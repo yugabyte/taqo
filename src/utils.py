@@ -500,7 +500,7 @@ def get_alias_table_names(sql_str, tables_in_sut):
 
     # return usable table objects list
     table_objects_in_query = []
-    for table_in_query in tables_in_query:
+    for table_in_query in sorted(tables_in_query, key=lambda t: (t.alias, t.name)):
         table_copy = table_in_query.copy()
 
         new_fields = []
