@@ -20,7 +20,3 @@ SELECT count(*)
 FROM lmc_main
 WHERE c_ts < LOCALTIMESTAMP
   AND c_date <= CURRENT_DATE + 365;
-
-EXPLAIN ANALYZE VERBOSE SELECT c_grp, count(*) FROM lmc_small GROUP BY c_grp;
-
-EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF) SELECT c_int FROM lmc_small WHERE c_int < 3;
