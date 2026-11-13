@@ -66,19 +66,23 @@ FROM lmc_main
 ORDER BY c_int
 FETCH FIRST ROWS ONLY;
 
-SELECT c_grp, c_int
-FROM lmc_main
-ORDER BY c_grp
-FETCH FIRST 3 ROWS WITH TIES;
+SELECT *
+FROM (SELECT c_grp, c_int
+      FROM lmc_main
+      ORDER BY c_grp
+      FETCH FIRST 3 ROWS WITH TIES) t
+ORDER BY c_grp, c_int;
+
+SELECT *
+FROM (SELECT c_grp, c_int
+      FROM lmc_main
+      ORDER BY c_grp DESC
+      FETCH NEXT ROW WITH TIES) t
+ORDER BY c_grp, c_int;
 
 SELECT c_grp, c_int
 FROM lmc_main
-ORDER BY c_grp DESC
-FETCH NEXT ROW WITH TIES;
-
-SELECT c_grp, c_int
-FROM lmc_main
-ORDER BY c_grp
+ORDER BY c_grp, c_int
 OFFSET 200 ROWS FETCH FIRST (2 + 3) ROWS ONLY;
 
 SELECT c_int, c_text
