@@ -161,6 +161,8 @@ def calculate_avg_execution_time(cur,
 
     with_analyze = query_with_analyze(query_str_lower)
     is_dml = query_is_dml(query_str_lower)
+    measured_is_explain_analyze = with_analyze and query_str_lower.lstrip().startswith("explain")
+    measured_returns_rowcount = is_dml and not measured_is_explain_analyze
 
     execution_times = []
     execution_plans = []
@@ -191,7 +193,7 @@ def calculate_avg_execution_time(cur,
             else:
                 if iteration < num_warmup:
                     query.parameters = evaluate_sql(cur, query_str)
-                    drain_result(cur, is_dml)
+                    drain_result(cur, measured_returns_rowcount)
                 else:
                     if not with_analyze and not execution_plan_collected:
                         collect_execution_plan(cur, connection, query, sut_database)
@@ -206,12 +208,12 @@ def calculate_avg_execution_time(cur,
                     config.logger.debug("SQL >> Getting results")
 
                     if with_analyze:
-                        _, result = get_result(cur, is_dml, separator="\n")
+                        _, result = get_result(cur, measured_returns_rowcount, separator="\n")
                         execution_time = extract_execution_time_from_analyze(result)
                         execution_times.append(execution_time)
                         execution_plans.append((execution_time, result))
                     else:
-                        drain_result(cur, is_dml)
+                        drain_result(cur, measured_returns_rowcount)
                         execution_times.append(current_milli_time() - start_time)
         except psycopg2.errors.QueryCanceled as qc:
             # failed by timeout - it's ok just skip optimization
@@ -273,11 +275,11 @@ def calculate_avg_execution_time(cur,
                 evaluate_sql(cur, query_str)
 
                 if with_analyze:
-                    _, result = get_result(cur, is_dml, separator="\n")
+                    _, result = get_result(cur, measured_returns_rowcount, separator="\n")
                     new_time = extract_execution_time_from_analyze(result)
                     execution_plans.append((new_time, result))
                 else:
-                    drain_result(cur, is_dml)
+                    drain_result(cur, measured_returns_rowcount)
                     new_time = current_milli_time() - start_time
 
                 execution_times.append(new_time)
