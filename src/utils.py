@@ -161,7 +161,8 @@ def calculate_avg_execution_time(cur,
 
     with_analyze = query_with_analyze(query_str_lower)
     is_dml = query_is_dml(query_str_lower)
-    measured_returns_rowcount = is_dml and not with_analyze
+    measured_is_explain_analyze = with_analyze and query_str_lower.lstrip().startswith("explain")
+    measured_returns_rowcount = is_dml and not measured_is_explain_analyze
 
     execution_times = []
     execution_plans = []
