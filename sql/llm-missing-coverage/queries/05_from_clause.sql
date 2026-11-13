@@ -21,7 +21,7 @@ SELECT c_int, c_text
 FROM lmc_tree
          NATURAL FULL OUTER JOIN lmc_small
 WHERE c_int BETWEEN 990 AND 1000
-ORDER BY c_int;
+ORDER BY c_int, c_text;
 
 SELECT c_int, s.c_text, m.c_num
 FROM lmc_small s

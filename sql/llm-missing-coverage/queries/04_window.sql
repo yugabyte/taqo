@@ -25,7 +25,7 @@ LIMIT 40;
 
 SELECT c_int,
        count(*) OVER (ORDER BY c_grp RANGE UNBOUNDED PRECEDING) AS c1,
-       count(*) OVER (ORDER BY c_grp ROWS 3 PRECEDING) AS c2,
+       count(*) OVER (ORDER BY c_grp, c_int ROWS 3 PRECEDING) AS c2,
        count(*) OVER (ORDER BY c_grp GROUPS BETWEEN 1 PRECEDING AND 1 FOLLOWING) AS c3
 FROM lmc_main
 WHERE c_int < 250
