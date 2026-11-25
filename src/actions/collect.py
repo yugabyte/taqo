@@ -196,14 +196,15 @@ class CollectAction:
                     if not original_query.error_message:
                         original_query.error_message = f"{type(pe).__name__}: {pe}".strip()
                     self.logger.exception(f"{original_query}\nFailed because of {pe}")
-                    if "allow_error" in original_query.optimizer_tips.tags:
-                        self.config.has_failures = had_failures
-                        self.config.has_warnings = True
                 except Exception as e:
                     self.logger.info(original_query)
                     raise e
                 finally:
                     counter += 1
+                    if (self.config.has_failures and not had_failures
+                            and "allow_error" in original_query.optimizer_tips.tags):
+                        self.config.has_failures = False
+                        self.config.has_warnings = True
 
             if not conn.closed:
                 conn.rollback()
