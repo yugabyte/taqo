@@ -148,6 +148,7 @@ class CollectAction:
             conn = self._reconnect(conn)
 
             with conn.cursor() as cur:
+                had_failures = self.config.has_failures
                 try:
                     self.logger.info(
                         f"Evaluating query with hash {original_query.query_hash} [{counter}/{len(queries)}]")
@@ -195,6 +196,9 @@ class CollectAction:
                     if not original_query.error_message:
                         original_query.error_message = f"{type(pe).__name__}: {pe}".strip()
                     self.logger.exception(f"{original_query}\nFailed because of {pe}")
+                    if "allow_error" in original_query.optimizer_tips.tags:
+                        self.config.has_failures = had_failures
+                        self.config.has_warnings = True
                 except Exception as e:
                     self.logger.info(original_query)
                     raise e

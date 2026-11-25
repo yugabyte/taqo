@@ -1,3 +1,4 @@
+-- tags: allow_error
 SELECT XMLELEMENT(NAME item) AS e0,
        XMLELEMENT(NAME item, XMLATTRIBUTES(c_int AS id, c_grp)) AS e1,
        XMLELEMENT(NAME item, c_text, '-', c_grp) AS e2,

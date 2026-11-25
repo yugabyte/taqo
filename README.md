@@ -184,6 +184,10 @@ TAQO implements consistency checks, which are reflected in the collect and repor
 In the event that certain optimizations yield varying results, these discrepancies will be brought to attention.
 To disable this feature, you can add the skip_consistency_check tag.
 
+A query tagged `allow_error` that fails is still recorded with its error message, but the failure
+makes the collect exit with code 2 (warnings) instead of 1. Use it for queries that need a feature
+some supported versions lack.
+
 ----
 
 ## Report
