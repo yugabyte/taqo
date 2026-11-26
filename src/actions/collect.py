@@ -148,6 +148,7 @@ class CollectAction:
             conn = self._reconnect(conn)
 
             with conn.cursor() as cur:
+                had_failures = self.config.has_failures
                 try:
                     self.logger.info(
                         f"Evaluating query with hash {original_query.query_hash} [{counter}/{len(queries)}]")
@@ -200,6 +201,10 @@ class CollectAction:
                     raise e
                 finally:
                     counter += 1
+                    if (self.config.has_failures and not had_failures
+                            and "allow_error" in original_query.optimizer_tips.tags):
+                        self.config.has_failures = False
+                        self.config.has_warnings = True
 
             if not conn.closed:
                 conn.rollback()
